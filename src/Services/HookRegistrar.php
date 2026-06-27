@@ -15,6 +15,7 @@ class HookRegistrar
     public function registerHooks(): void
     {
         $this->registerDynamicStyles();
+        $this->registerJavascript();
 
         if ($this->awrelPlugin->isFaviconSpinnerEnabled()) {
             $this->registerFaviconSpinner();
@@ -85,6 +86,26 @@ class HookRegistrar
                     }
                 </style>
                 HTML;
+            },
+        );
+    }
+
+    /**
+     * Inject the Awrel JavaScript bundle via a render hook.
+     *
+     * Uses a render hook instead of FilamentAsset/Vite so the JS loads
+     * reliably without requiring a Vite build step. The script is loaded
+     * with defer so it executes after DOM parsing but the Alpine component
+     * registrations handle both pre-init and post-init scenarios.
+     */
+    private function registerJavascript(): void
+    {
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::HEAD_START,
+            function (): string {
+                $path = asset('vendor/awrel/awrel.js');
+
+                return '<script defer src="'.$path.'"></script>';
             },
         );
     }
