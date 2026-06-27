@@ -269,21 +269,47 @@ class AwrelInstallCommand extends Command
             }
         }
 
-        // ── Add ->plugin(…) before the closing semicolon of the return ──
+        // ── Add ->plugin(…) at the end of the return statement ──
         $pluginCall =
             "->plugin(AwrelPlugin::make()->faviconSpinner()->stickyTableActions())";
 
         if (!str_contains($contents, "AwrelPlugin::make()")) {
-            $pattern = '/\);\s*\n\s*\}/';
-            if (preg_match($pattern, $contents)) {
-                $contents = preg_replace(
-                    $pattern,
-                    "\n            " . $pluginCall . "\n    );\n}",
-                    $contents,
-                    1,
+            // Find `return $panel` to anchor the search
+            $returnPos = strpos($contents, 'return $panel');
+            if ($returnPos === false) {
+                $this->components->warn(
+                    "Could not find 'return \$panel' in panel file.",
                 );
-                $changed = true;
+
+                return;
             }
+
+            // From there, find the LAST `);` (the return statement closing)
+            $searchStart = $returnPos;
+            $closingPos = false;
+
+            while (($found = strpos($contents, ");", $searchStart)) !== false) {
+                $closingPos = $found;
+                $searchStart = $found + 1;
+            }
+
+            if ($closingPos === false) {
+                $this->components->warn(
+                    "Could not find closing ');' for the return statement.",
+                );
+
+                return;
+            }
+
+            // Replace `);` with `)\n            ->plugin(...);`
+            // This preserves `]` before `)` in `]);`
+            $contents = substr_replace(
+                $contents,
+                ")\n            " . $pluginCall . ";",
+                $closingPos,
+                2, // length of ');'
+            );
+            $changed = true;
         }
 
         if ($changed) {
