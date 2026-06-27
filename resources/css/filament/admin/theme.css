@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "../../../../vendor/filament/filament/resources/css/theme.css";
+@import "../../../../../../vendor/filament/filament/resources/css/theme.css";
 
 /*
  * Explicitly tell Tailwind v4 to scan Awrel views for class names.
