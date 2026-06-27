@@ -2,6 +2,15 @@
 @import "../../../../vendor/filament/filament/resources/css/theme.css";
 
 /*
+ * Explicitly tell Tailwind v4 to scan Awrel views for class names.
+ * Without this, classes used only in Awrel Blade templates (like
+ * grid, flex, gap, rounded-2xl on the settings page) won't be generated
+ * because vendor/ is in .gitignore and skipped by auto-detection.
+ */
+@source "../../../views/vendor/awrel";
+@source "../../../../vendor/khoirulaksara/awrel/resources/views";
+
+/*
  * AWREL THEME — Filament v5 Premium Dashboard Theme
  *
  * Features:
