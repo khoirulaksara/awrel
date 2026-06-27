@@ -278,7 +278,7 @@ class AwrelInstallCommand extends Command
             if (preg_match($pattern, $contents)) {
                 $contents = preg_replace(
                     $pattern,
-                    "\n            " . $pluginCall . "\n    );\n\}",
+                    "\n            " . $pluginCall . "\n    );\n}",
                     $contents,
                     1,
                 );

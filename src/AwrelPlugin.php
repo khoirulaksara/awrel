@@ -4,6 +4,7 @@ namespace Khoirulaksara\Awrel;
 
 use Filament\Contracts\Plugin;
 use Filament\Panel;
+use Khoirulaksara\Awrel\Filament\Pages\ThemeSettingsPage;
 use Khoirulaksara\Awrel\Helpers\ThemeSettings;
 use Khoirulaksara\Awrel\Services\HookRegistrar;
 
@@ -19,7 +20,7 @@ class AwrelPlugin implements Plugin
 
     public function getId(): string
     {
-        return 'awrel-theme';
+        return "awrel-theme";
     }
 
     public function faviconSpinner(bool $condition = true): static
@@ -50,7 +51,7 @@ class AwrelPlugin implements Plugin
 
     public function register(Panel $panel): void
     {
-        // Primary color is handled dynamically via CSS vars in render hooks.
+        $panel->pages([ThemeSettingsPage::class]);
     }
 
     public function boot(Panel $panel): void
