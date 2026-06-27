@@ -7,6 +7,7 @@ use Filament\Support\Facades\FilamentAsset;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Khoirulaksara\Awrel\Commands\AwrelInstallCommand;
+use Khoirulaksara\Awrel\Commands\AwrelUninstallCommand;
 
 class AwrelThemeServiceProvider extends ServiceProvider
 {
@@ -30,7 +31,10 @@ class AwrelThemeServiceProvider extends ServiceProvider
 
         // Publisheable assets
         if ($this->app->runningInConsole()) {
-            $this->commands([AwrelInstallCommand::class]);
+            $this->commands([
+                AwrelInstallCommand::class,
+                AwrelUninstallCommand::class,
+            ]);
 
             $this->publishes(
                 [__DIR__ . "/../config/awrel.php" => config_path("awrel.php")],
