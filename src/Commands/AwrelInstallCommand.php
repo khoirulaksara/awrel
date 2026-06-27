@@ -83,9 +83,10 @@ class AwrelInstallCommand extends Command
 
         $this->wireServiceProvider();
 
-        // ── 5. Auto-wire plugin in AdminPanelProvider ──
+        // ── 5. Auto-wire plugin and fix viteTheme path ──
 
         $this->wirePanelPlugin();
+        $this->fixViteThemePath();
 
         // ── 7. Done ──
 
@@ -116,10 +117,13 @@ class AwrelInstallCommand extends Command
     }
 
     /**
-     * Install the Awrel theme CSS by overwriting the original Filament theme.css.
+     * Install the Awrel theme CSS.
      *
-     * Backs up the original if it exists, then copies the Awrel CSS
-     * to resources/css/filament/admin/theme.css.
+     * 1. Removes any stale vendor-path CSS from old installs
+     *    (resources/css/vendor/awrel/).
+     * 2. Backs up the original theme.css if it exists and is not
+     *    already the Awrel CSS.
+     * 3. Copies the Awrel CSS to resources/css/filament/admin/theme.css.
      */
     protected function installThemeCss(): string
     {
@@ -130,7 +134,13 @@ class AwrelInstallCommand extends Command
             return "Skipped (package CSS not found)";
         }
 
-        // Back up the original theme.css if it exists and isn\'t already the Awrel CSS
+        // ── 1. Clean up any stale vendor-path files from old installs ──
+        $staleVendorDir = resource_path("css/vendor/awrel");
+        if (is_dir($staleVendorDir)) {
+            $this->rmdirRecursive($staleVendorDir);
+        }
+
+        // ── 2. Back up the original ──
         if (file_exists($target)) {
             $originalContent = file_get_contents($target);
             $awrelContent = file_get_contents($source);
@@ -141,7 +151,7 @@ class AwrelInstallCommand extends Command
             }
         }
 
-        // Ensure the target directory exists
+        // ── 3. Ensure target dir exists and copy ──
         $dir = dirname($target);
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
@@ -149,7 +159,35 @@ class AwrelInstallCommand extends Command
 
         copy($source, $target);
 
-        return "Installed at resources/css/filament/admin/theme.css";
+        return "Installed";
+    }
+
+    /**
+     * Recursively delete a directory and all its contents.
+     */
+    protected function rmdirRecursive(string $dir): void
+    {
+        if (!is_dir($dir)) {
+            return;
+        }
+
+        $items = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator(
+                $dir,
+                \RecursiveDirectoryIterator::SKIP_DOTS,
+            ),
+            \RecursiveIteratorIterator::CHILD_FIRST,
+        );
+
+        foreach ($items as $item) {
+            if ($item->isDir()) {
+                rmdir($item->getRealPath());
+            } else {
+                unlink($item->getRealPath());
+            }
+        }
+
+        rmdir($dir);
     }
 
     /**
@@ -324,6 +362,28 @@ class AwrelInstallCommand extends Command
                 "Wiring plugin to panel",
                 fn() => "Skipped (already configured)",
             );
+        }
+    }
+
+    /**
+     * Fix the viteTheme path in AdminPanelProvider if it points
+     * to the stale vendor location (from older installs).
+     */
+    protected function fixViteThemePath(): void
+    {
+        $panelPath = app_path("Providers/Filament/AdminPanelProvider.php");
+
+        if (!file_exists($panelPath)) {
+            return;
+        }
+
+        $contents = file_get_contents($panelPath);
+        $badPath = "resources/css/vendor/awrel/filament/admin/theme.css";
+        $goodPath = "resources/css/filament/admin/theme.css";
+
+        if (str_contains($contents, $badPath)) {
+            $contents = str_replace($badPath, $goodPath, $contents);
+            file_put_contents($panelPath, $contents);
         }
     }
 }
