@@ -1,0 +1,47 @@
+{
+    "name": "khoirulaksara/awrel",
+    "description": "Premium dashboard theme plugin for Filament v5 with micro-interactions, skeleton loaders, glassmorphism, sticky table actions, and more.",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "filament",
+        "filament-plugin",
+        "theme",
+        "dashboard",
+        "laravel",
+        "tailwindcss",
+        "livewire"
+    ],
+    "authors": [
+        {
+            "name": "khoirulaksara",
+            "homepage": "https://github.com/khoirulaksara"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "laravel/framework": "^11.0|^12.0|^13.0",
+        "filament/filament": "^5.0",
+        "filament/support": "^5.0",
+        "livewire/livewire": "^4.0",
+        "blade-ui-kit/blade-heroicons": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Khoirulaksara\\Awrel\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Khoirulaksara\\Awrel\\AwrelThemeServiceProvider"
+            ]
+        }
+    },
+    "support": {
+        "issues": "https://github.com/khoirulaksara/awrel/issues",
+        "source": "https://github.com/khoirulaksara/awrel"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
