@@ -210,14 +210,31 @@ php artisan vendor:publish --tag=awrel-public
 php artisan vendor:publish --tag=awrel-config
 ```
 
-## Publishing to Packagist
+## Submit to Packagist
 
-1. Create a repository on GitHub
-2. Push the `packages/khoirulaksara/awrel` directory as the root of the repository
-3. Create a tag (e.g., `v1.0.0`)
-4. Submit to [Packagist](https://packagist.org/packages/khoirulaksara/awrel)
+Package sudah tersedia di GitHub:
+https://github.com/khoirulaksara/awrel
 
-For local development, keep the path repository in your root `composer.json`:
+1. Buka [Packagist](https://packagist.org/packages/submit)
+2. Masukkan URL repo: `https://github.com/khoirulaksara/awrel`
+3. Klik **Check** → **Submit**
+
+Setelah itu, setup **GitHub webhook** agar package otomatis update tiap kali push:
+- Login ke Packagist via GitHub (atau di [profile](https://packagist.org/profile/))
+- Packagist akan otomatis pasang webhook ke repo
+
+### Release versi baru
+
+```bash
+git tag v1.1.0
+git push origin v1.1.0
+```
+
+Packagist akan otomatis mendeteksi tag baru.
+
+### Local development
+
+Kalau mau develop package ini bareng project Laravel, tambahkan path repository di `composer.json`:
 
 ```json
 {
