@@ -3,55 +3,57 @@
 namespace Khoirulaksara\Awrel\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Khoirulaksara\Awrel\Models\AwrelSetting;
 
 class AwrelInstallCommand extends Command
 {
-    protected $signature = "awrel:install {--force : Re-run the migration even if it has already been run}";
+    protected $signature = 'awrel:install {--force : Force re-publish all assets}';
 
-    protected $description = "Install Awrel Theme (publish assets, run migration, seed defaults, auto-wire plugin)";
+    protected $description = 'Install Awrel Theme (publish assets, run migration, seed defaults, auto-wire plugin)';
 
     public function handle(): int
     {
-        $this->components->info("Installing Awrel Theme...");
+        $this->components->info('Installing Awrel Theme...');
 
         // ── 1. Publish assets ──
 
-        $this->components->task("Publishing config", function () {
-            $this->callSilently("vendor:publish", [
-                "--tag" => "awrel-config",
-                "--force" => true,
+        $this->components->task('Publishing config', function () {
+            $this->callSilently('vendor:publish', [
+                '--tag' => 'awrel-config',
+                '--force' => true,
             ]);
 
             return true;
         });
 
-        $this->components->task("Publishing views", function () {
-            $this->callSilently("vendor:publish", [
-                "--tag" => "awrel-views",
-                "--force" => true,
+        $this->components->task('Publishing views', function () {
+            $this->callSilently('vendor:publish', [
+                '--tag' => 'awrel-views',
+                '--force' => true,
             ]);
 
             return true;
         });
 
-        $this->components->task("Installing theme CSS", function () {
+        $this->components->task('Installing theme CSS', function () {
             return $this->installThemeCss();
         });
 
-        $this->components->task("Publishing JS", function () {
-            $this->callSilently("vendor:publish", [
-                "--tag" => "awrel-js",
-                "--force" => true,
+        $this->components->task('Publishing JS', function () {
+            $this->callSilently('vendor:publish', [
+                '--tag' => 'awrel-js',
+                '--force' => true,
             ]);
 
             return true;
         });
 
-        $this->components->task("Publishing public assets", function () {
-            $this->callSilently("vendor:publish", [
-                "--tag" => "awrel-public",
-                "--force" => true,
+        $this->components->task('Publishing public assets', function () {
+            $this->callSilently('vendor:publish', [
+                '--tag' => 'awrel-public',
+                '--force' => true,
             ]);
 
             return true;
@@ -59,9 +61,20 @@ class AwrelInstallCommand extends Command
 
         // ── 2. Migration ──
 
-        $this->components->task("Running migration", function () {
-            $this->callSilently("migrate", [
-                "--force" => $this->option("force"),
+        $this->components->task('Running migration', function () {
+            // If the table doesn't exist but a stale migration record does
+            // (from a previous install/uninstall cycle), delete the record
+            // so the migration re-runs.
+            if (
+                ! Schema::hasTable('awrel_settings')
+            ) {
+                DB::table('migrations')
+                    ->where('migration', 'like', '%awrel%')
+                    ->delete();
+            }
+
+            $this->callSilently('migrate', [
+                '--force' => true,
             ]);
 
             return true;
@@ -69,48 +82,55 @@ class AwrelInstallCommand extends Command
 
         // ── 3. Seed defaults ──
 
-        $this->components->task("Seeding default settings", function () {
-            if (!AwrelSetting::first()) {
-                AwrelSetting::create(["settings" => config("awrel")]);
-
-                return "Created";
+        $this->components->task('Seeding default settings', function () {
+            if (
+                ! Schema::hasTable('awrel_settings')
+            ) {
+                return 'Skipped (table not found)';
             }
 
-            return "Skipped (already exists)";
+            if (! AwrelSetting::first()) {
+                AwrelSetting::create(['settings' => config('awrel')]);
+
+                return 'Created';
+            }
+
+            return 'Skipped (already exists)';
         });
 
         // ── 4. Auto-wire service provider ──
 
         $this->wireServiceProvider();
 
-        // ── 5. Auto-wire plugin and fix viteTheme path ──
+        // ── 5. Auto-wire plugin and fix paths ──
 
         $this->wirePanelPlugin();
         $this->fixViteThemePath();
+        $this->fixViteConfig();
 
         // ── 7. Done ──
 
-        $this->components->info("Awrel Theme installed successfully.");
+        $this->components->info('Awrel Theme installed successfully.');
 
         $this->components->twoColumnDetail(
-            "<fg=green;options=bold>Plugin registered</>",
-            "AdminPanelProvider",
+            '<fg=green;options=bold>Plugin registered</>',
+            'AdminPanelProvider',
         );
         $this->components->twoColumnDetail(
-            "<fg=green;options=bold>Service provider registered</>",
-            "bootstrap/providers.php",
+            '<fg=green;options=bold>Service provider registered</>',
+            'bootstrap/providers.php',
         );
         $this->components->twoColumnDetail(
-            "<fg=green;options=bold>Theme CSS linked</>",
-            "resources/css/filament/admin/theme.css",
+            '<fg=green;options=bold>Theme CSS linked</>',
+            'resources/css/filament/admin/theme.css',
         );
 
         $this->newLine();
         $this->components->bulletList([
-            "Build assets:",
-            "    npm run build",
-            "",
-            "Login and visit Settings > Awrel Theme Settings to customize.",
+            'Build assets:',
+            '    npm run build',
+            '',
+            'Login and visit Settings > Awrel Theme Settings to customize.',
         ]);
 
         return self::SUCCESS;
@@ -127,15 +147,15 @@ class AwrelInstallCommand extends Command
      */
     protected function installThemeCss(): string
     {
-        $target = resource_path("css/filament/admin/theme.css");
-        $source = __DIR__ . "/../../resources/css/filament/admin/theme.css";
+        $target = resource_path('css/filament/admin/theme.css');
+        $source = __DIR__.'/../../resources/css/filament/admin/theme.css';
 
-        if (!file_exists($source)) {
-            return "Skipped (package CSS not found)";
+        if (! file_exists($source)) {
+            return 'Skipped (package CSS not found)';
         }
 
         // ── 1. Clean up any stale vendor-path files from old installs ──
-        $staleVendorDir = resource_path("css/vendor/awrel");
+        $staleVendorDir = resource_path('css/vendor/awrel');
         if (is_dir($staleVendorDir)) {
             $this->rmdirRecursive($staleVendorDir);
         }
@@ -146,20 +166,20 @@ class AwrelInstallCommand extends Command
             $awrelContent = file_get_contents($source);
 
             if ($originalContent !== $awrelContent) {
-                $backup = $target . ".awrel-backup";
+                $backup = $target.'.awrel-backup';
                 copy($target, $backup);
             }
         }
 
         // ── 3. Ensure target dir exists and copy ──
         $dir = dirname($target);
-        if (!is_dir($dir)) {
+        if (! is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
 
         copy($source, $target);
 
-        return "Installed";
+        return 'Installed';
     }
 
     /**
@@ -167,7 +187,7 @@ class AwrelInstallCommand extends Command
      */
     protected function rmdirRecursive(string $dir): void
     {
-        if (!is_dir($dir)) {
+        if (! is_dir($dir)) {
             return;
         }
 
@@ -199,26 +219,26 @@ class AwrelInstallCommand extends Command
      */
     protected function wireServiceProvider(): void
     {
-        $path = base_path("bootstrap/providers.php");
+        $path = base_path('bootstrap/providers.php');
 
-        if (!file_exists($path)) {
+        if (! file_exists($path)) {
             $this->components->warn(
-                "bootstrap/providers.php not found. Skipping service provider registration.",
+                'bootstrap/providers.php not found. Skipping service provider registration.',
             );
 
             return;
         }
 
         $contents = file_get_contents($path);
-        $className = "AwrelThemeServiceProvider";
-        $fqn = "Khoirulaksara\\Awrel\\" . $className;
-        $useStatement = "use " . $fqn . ";";
+        $className = 'AwrelThemeServiceProvider';
+        $fqn = 'Khoirulaksara\\Awrel\\'.$className;
+        $useStatement = 'use '.$fqn.';';
 
         // Check if already registered (use statement OR return array entry)
         if (str_contains($contents, $className)) {
             $this->components->task(
-                "Registering service provider",
-                fn() => "Skipped (already registered)",
+                'Registering service provider',
+                fn () => 'Skipped (already registered)',
             );
 
             return;
@@ -227,7 +247,7 @@ class AwrelInstallCommand extends Command
         // Add use statement before the return array
         $contents = preg_replace(
             "/^(return\s+)/m",
-            $useStatement . "\n\n$1",
+            $useStatement."\n\n$1",
             $contents,
             1,
         );
@@ -235,7 +255,7 @@ class AwrelInstallCommand extends Command
         // Add to the return array
         $contents = preg_replace(
             "/(return\s+\[)/",
-            "$1\n    " . $className . "::class,",
+            "$1\n    ".$className.'::class,',
             $contents,
             1,
         );
@@ -243,8 +263,8 @@ class AwrelInstallCommand extends Command
         file_put_contents($path, $contents);
 
         $this->components->task(
-            "Registering service provider",
-            fn() => "Registered",
+            'Registering service provider',
+            fn () => 'Registered',
         );
     }
 
@@ -254,7 +274,7 @@ class AwrelInstallCommand extends Command
     protected function wirePanelPlugin(): void
     {
         $paths = [
-            app_path("Providers/Filament/AdminPanelProvider.php"),
+            app_path('Providers/Filament/AdminPanelProvider.php'),
             // Also check common alternative paths
         ];
 
@@ -266,9 +286,9 @@ class AwrelInstallCommand extends Command
             }
         }
 
-        if (!$panelPath) {
+        if (! $panelPath) {
             $this->components->warn(
-                "AdminPanelProvider.php not found. Skipping plugin registration.",
+                'AdminPanelProvider.php not found. Skipping plugin registration.',
             );
 
             return;
@@ -282,24 +302,24 @@ class AwrelInstallCommand extends Command
         // ── Add imports if missing ──
         $changed = false;
 
-        if (!str_contains($contents, $import)) {
+        if (! str_contains($contents, $import)) {
             $pattern = '/^(use\s+.+;)$/m';
             if (preg_match_all($pattern, $contents, $matches, PREG_SET_ORDER)) {
                 $lastUse = end($matches);
                 $pos = strpos($contents, $lastUse[0]) + strlen($lastUse[0]);
-                $contents = substr_replace($contents, "\n" . $import, $pos, 0);
+                $contents = substr_replace($contents, "\n".$import, $pos, 0);
                 $changed = true;
             }
         }
 
-        if (!str_contains($contents, $importPage)) {
+        if (! str_contains($contents, $importPage)) {
             $pattern = '/^(use\s+.+;)$/m';
             if (preg_match_all($pattern, $contents, $matches, PREG_SET_ORDER)) {
                 $lastUse = end($matches);
                 $pos = strpos($contents, $lastUse[0]) + strlen($lastUse[0]);
                 $contents = substr_replace(
                     $contents,
-                    "\n" . $importPage,
+                    "\n".$importPage,
                     $pos,
                     0,
                 );
@@ -309,9 +329,9 @@ class AwrelInstallCommand extends Command
 
         // ── Add ->plugin(…) at the end of the return statement ──
         $pluginCall =
-            "->plugin(AwrelPlugin::make()->faviconSpinner()->stickyTableActions())";
+            '->plugin(AwrelPlugin::make()->faviconSpinner()->stickyTableActions())';
 
-        if (!str_contains($contents, "AwrelPlugin::make()")) {
+        if (! str_contains($contents, 'AwrelPlugin::make()')) {
             // Find `return $panel` to anchor the search
             $returnPos = strpos($contents, 'return $panel');
             if ($returnPos === false) {
@@ -326,7 +346,7 @@ class AwrelInstallCommand extends Command
             $searchStart = $returnPos;
             $closingPos = false;
 
-            while (($found = strpos($contents, ");", $searchStart)) !== false) {
+            while (($found = strpos($contents, ');', $searchStart)) !== false) {
                 $closingPos = $found;
                 $searchStart = $found + 1;
             }
@@ -343,7 +363,7 @@ class AwrelInstallCommand extends Command
             // This preserves `]` before `)` in `]);`
             $contents = substr_replace(
                 $contents,
-                ")\n            " . $pluginCall . ";",
+                ")\n            ".$pluginCall.';',
                 $closingPos,
                 2, // length of ');'
             );
@@ -354,13 +374,13 @@ class AwrelInstallCommand extends Command
             file_put_contents($panelPath, $contents);
 
             $this->components->task(
-                "Wiring plugin to panel",
-                fn() => "Updated " . class_basename($panelPath),
+                'Wiring plugin to panel',
+                fn () => 'Updated '.class_basename($panelPath),
             );
         } else {
             $this->components->task(
-                "Wiring plugin to panel",
-                fn() => "Skipped (already configured)",
+                'Wiring plugin to panel',
+                fn () => 'Skipped (already configured)',
             );
         }
     }
@@ -371,19 +391,52 @@ class AwrelInstallCommand extends Command
      */
     protected function fixViteThemePath(): void
     {
-        $panelPath = app_path("Providers/Filament/AdminPanelProvider.php");
+        $panelPath = app_path('Providers/Filament/AdminPanelProvider.php');
 
-        if (!file_exists($panelPath)) {
+        if (! file_exists($panelPath)) {
             return;
         }
 
         $contents = file_get_contents($panelPath);
-        $badPath = "resources/css/vendor/awrel/filament/admin/theme.css";
-        $goodPath = "resources/css/filament/admin/theme.css";
+        $badPath = 'resources/css/vendor/awrel/filament/admin/theme.css';
+        $goodPath = 'resources/css/filament/admin/theme.css';
 
         if (str_contains($contents, $badPath)) {
             $contents = str_replace($badPath, $goodPath, $contents);
             file_put_contents($panelPath, $contents);
+        }
+    }
+
+    /**
+     * Remove stale Awrel vendor CSS references from vite.config.js
+     * left behind by older install versions.
+     */
+    protected function fixViteConfig(): void
+    {
+        $vitePath = base_path('vite.config.js');
+
+        if (! file_exists($vitePath)) {
+            return;
+        }
+
+        $contents = file_get_contents($vitePath);
+        $original = $contents;
+
+        // Remove any input lines referencing the stale vendor CSS path
+        $stalePath = 'resources/css/vendor/awrel';
+
+        // Remove lines like: 'resources/css/vendor/awrel/filament/admin/theme.css',
+        $contents = preg_replace(
+            '/\s*[\'"][^\'"]*resources\/css\/vendor\/awrel[^\'"]*[\'"][,\s]*\n?/',
+            "\n",
+            $contents,
+        );
+
+        // Clean up extra blank lines left behind
+        $contents = preg_replace("/\n{3,}/", "\n\n", $contents);
+
+        if ($contents !== $original) {
+            file_put_contents($vitePath, $contents);
         }
     }
 }
