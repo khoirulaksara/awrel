@@ -1,5 +1,6 @@
 {
     "name": "khoirulaksara/awrel",
+    "version": "1.0.0",
     "description": "Premium dashboard theme plugin for Filament v5 with micro-interactions, skeleton loaders, glassmorphism, sticky table actions, and more.",
     "type": "library",
     "license": "MIT",
@@ -42,6 +43,6 @@
         "issues": "https://github.com/khoirulaksara/awrel/issues",
         "source": "https://github.com/khoirulaksara/awrel"
     },
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "prefer-stable": true
 }
