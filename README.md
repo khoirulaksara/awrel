@@ -34,79 +34,34 @@
 composer require khoirulaksara/awrel
 ```
 
-### 2. Register the Service Provider
-
-The package auto-discovers its service provider via Composer. If auto-discovery is disabled, add it to `bootstrap/providers.php`:
-
-```php
-<?php
-
-return [
-    // ...
-    Khoirulaksara\Awrel\AwrelThemeServiceProvider::class,
-];
-```
-
-### 3. Run the install command
+### 2. Run the install command (auto-wires everything)
 
 ```bash
 php artisan awrel:install
 ```
 
-This will:
-- Publish the config file
-- Publish views
-- Publish CSS
-- Publish JS
-- Publish public assets (favicon spinner)
-- Run the database migration
-- Seed default settings
+This single command will:
+- Publish config, views, CSS, JS, and public assets
+- Run the database migration and seed default settings
+- **Auto-register** the service provider in `bootstrap/providers.php`
+- **Auto-configure** the plugin in `app/Providers/Filament/AdminPanelProvider.php`
+- **Auto-update** `vite.config.js` with the theme CSS input
 
-### 4. Add the plugin to your Filament panel
-
-In `app/Providers/Filament/AdminPanelProvider.php`:
-
-```php
-use Khoirulaksara\Awrel\AwrelPlugin;
-
-// Add to your panel configuration:
-$panel
-    ->plugin(
-        AwrelPlugin::make()
-            ->faviconSpinner()        // Enable animated favicon spinner (opt-in)
-            ->stickyTableActions()     // Enable sticky table actions (opt-in)
-    );
-```
-
-### 5. Set the Vite theme
-
-```php
-$panel
-    ->viteTheme('resources/css/filament/admin/theme.css')
-```
-
-Or if you published the CSS:
-
-```php
-$panel
-    ->viteTheme('resources/css/vendor/awrel/filament/admin/theme.css')
-```
-
-### 6. Run database migrations
-
-```bash
-php artisan migrate
-```
-
-### 7. Build assets
+### 3. Build assets
 
 ```bash
 npm run build
+
+# Or for development:
+# php artisan filament:assets
+# npm run dev
 ```
 
-### 8. Login and configure
+### 4. Login and configure
 
 Navigate to **Settings → Awrel Theme Settings** in your Filament admin panel to customize colors, fonts, border radius, and layout options.
+
+> **Note:** The install command will not overwrite existing configuration if it detects that settings are already in place. Re-run with `--force` to re-publish assets.
 
 ## Configuration
 
