@@ -32,7 +32,7 @@
                             </div>
                         </div>
                         <label class="relative inline-flex cursor-pointer items-center">
-                            <input type="checkbox" id="favicon_spinner" wire:model="data.favicon_spinner" class="peer sr-only">
+                            <input type="checkbox" id="favicon_spinner" wire:model.live="settings.favicon_spinner" class="peer sr-only">
                             <div class="h-5 w-9 rounded-full bg-gray-200 after:absolute after:start-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-500 peer-checked:after:translate-x-full dark:bg-gray-600"></div>
                         </label>
                     </div>
@@ -52,7 +52,7 @@
                             </div>
                         </div>
                         <label class="relative inline-flex cursor-pointer items-center">
-                            <input type="checkbox" id="sticky_table_actions" wire:model="data.sticky_table_actions" class="peer sr-only">
+                            <input type="checkbox" id="sticky_table_actions" wire:model.live="settings.sticky_table_actions" class="peer sr-only">
                             <div class="h-5 w-9 rounded-full bg-gray-200 after:absolute after:start-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary-500 peer-checked:after:translate-x-full dark:bg-gray-600"></div>
                         </label>
                     </div>
@@ -76,8 +76,7 @@
             <div class="space-y-6 px-6 py-5">
                 {{-- Primary Color --}}
                 <div
-                    x-data="awrelColorPicker()"
-                    x-init="init('{{ $data['primary_color'] }}')"
+                    x-data="awrelColorPicker('{{ $settings['primary_color'] ?? '#f59e0b' }}')"
                     class="rounded-xl border border-gray-100 bg-gray-50/50 p-4 dark:border-gray-800 dark:bg-gray-900/50"
                 >
                     <label class="block text-sm font-medium text-gray-900 dark:text-white">
@@ -90,7 +89,7 @@
                         <div class="relative">
                             <input
                                 type="color"
-                                wire:model.live="data.primary_color"
+                                wire:model.live="settings.primary_color"
                                 x-ref="colorInput"
                                 x-on:input="updatePreview($refs.colorInput.value)"
                                 class="h-10 w-10 cursor-pointer rounded-lg border border-gray-300 dark:border-gray-600"
@@ -99,9 +98,9 @@
                         <div class="flex-1">
                             <input
                                 type="text"
-                                wire:model.live="data.primary_color"
+                                wire:model.live="settings.primary_color"
                                 class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                                placeholder="#ff0000"
+                                placeholder="#f59e0b"
                             />
                         </div>
                         <div class="flex h-10 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-xs font-medium text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
@@ -110,13 +109,13 @@
                         </div>
                     </div>
                     {{-- Color preset swatches --}}
-                    <div class="mt-3 flex gap-2">
-                        @foreach(['#f59e0b', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'] as $preset)
-                            @php $preset = (string) $preset; @endphp
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        @php $presets = ['#f59e0b', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#6366f1', '#14b8a6']; @endphp
+                        @foreach($presets as $preset)
                             <button
                                 type="button"
                                 x-on:click="setColor('{{ $preset }}')"
-                                class="h-6 w-6 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-gray-800"
+                                class="h-7 w-7 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-gray-800"
                                 style="background-color: {{ $preset }}"
                                 title="{{ $preset }}"
                             ></button>
@@ -134,8 +133,11 @@
                     </p>
                     <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                         @foreach(['Plus Jakarta Sans', 'Inter', 'Instrument Sans', 'system-ui'] as $fontOption)
-                            <label class="relative flex cursor-pointer rounded-lg border-2 p-3 transition-all duration-150 {{ $data['font_family'] === $fontOption ? 'border-primary-500 bg-primary-50 dark:border-primary-500 dark:bg-primary-900/20' : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600' }}">
-                                <input type="radio" name="font_family" value="{{ $fontOption }}" wire:model="data.font_family" class="sr-only">
+                            <label class="relative flex cursor-pointer rounded-lg border-2 p-3 transition-all duration-150"
+                                :class="$wire.settings.font_family === '{{ $fontOption }}'
+                                    ? 'border-primary-500 bg-primary-50 dark:border-primary-500 dark:bg-primary-900/20'
+                                    : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'">
+                                <input type="radio" name="font_family" value="{{ $fontOption }}" wire:model.live="settings.font_family" class="sr-only">
                                 <div class="w-full">
                                     <span class="block text-sm font-medium text-gray-900 dark:text-white" style="font-family: '{{ $fontOption }}', sans-serif">
                                         {{ $fontOption }}
@@ -157,12 +159,16 @@
                     <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
                         Controls the rounding of cards, buttons, and panels.
                     </p>
-                    <div class="mt-3 flex items-center gap-2">
+                    <div class="mt-3 flex flex-wrap items-center gap-2">
                         @php $rValues = ['sm' => '0.375rem', 'md' => '0.5rem', 'lg' => '0.75rem', 'xl' => '1rem', '2xl' => '1.25rem']; @endphp
                         @foreach(['sm', 'md', 'lg', 'xl', '2xl'] as $radiusOption)
                             @php $rVal = $rValues[$radiusOption]; @endphp
-                            <label class="relative flex cursor-pointer items-center gap-2 rounded-lg border-2 px-4 py-3 transition-all duration-150 {{ $data['border_radius'] === $radiusOption ? 'border-primary-500 bg-primary-50 dark:border-primary-500 dark:bg-primary-900/20' : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600' }}" style="border-radius: {{ $rVal }}">
-                                <input type="radio" name="border_radius" value="{{ $radiusOption }}" wire:model="data.border_radius" class="sr-only">
+                            <label class="relative flex cursor-pointer items-center gap-2 rounded-lg border-2 px-4 py-3 transition-all duration-150"
+                                :class="$wire.settings.border_radius === '{{ $radiusOption }}'
+                                    ? 'border-primary-500 bg-primary-50 dark:border-primary-500 dark:bg-primary-900/20'
+                                    : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'"
+                                style="border-radius: {{ $rVal }}">
+                                <input type="radio" name="border_radius" value="{{ $radiusOption }}" wire:model.live="settings.border_radius" class="sr-only">
                                 <span class="text-sm font-medium text-gray-900 dark:text-white">{{ $radiusOption }}</span>
                             </label>
                         @endforeach
@@ -187,8 +193,7 @@
             <div class="space-y-6 px-6 py-5">
                 {{-- Sidebar Width --}}
                 <div
-                    x-data="awrelRangeSlider()"
-                    x-init="init('{{ $data['sidebar_width'] }}')"
+                    x-data="awrelRangeSlider({{ $settings['sidebar_width'] ?? 256 }})"
                     class="rounded-xl border border-gray-100 bg-gray-50/50 p-4 dark:border-gray-800 dark:bg-gray-900/50"
                 >
                     <label for="sidebar_width" class="block text-sm font-medium text-gray-900 dark:text-white">
@@ -204,7 +209,8 @@
                             min="180"
                             max="400"
                             step="4"
-                            wire:model.live="data.sidebar_width"
+                            wire:model.live="settings.sidebar_width"
+                            x-on:input="updateWidth($event.target.value)"
                             class="w-full accent-primary-500"
                         />
                         <span class="min-w-[3rem] text-right text-sm font-mono font-medium text-gray-700 dark:text-gray-300" x-text="currentWidth + 'px'"></span>

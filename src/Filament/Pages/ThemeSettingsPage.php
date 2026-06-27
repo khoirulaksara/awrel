@@ -24,22 +24,31 @@ class ThemeSettingsPage extends Page
 
     protected string $view = 'awrel::filament.pages.theme-settings';
 
-    public array $data = [];
+    public array $settings = [];
 
     public function mount(): void
     {
-        $this->data = ThemeSettings::all();
+        $this->settings = ThemeSettings::all();
+    }
+
+    public function updated($name, $value): void
+    {
+        // When a setting changes, update the session cache so Alpine/JS
+        // can read revised values without a page refresh.
+        // This method is triggered by wire:model.live on the frontend.
     }
 
     public function save(): void
     {
-        $validated = $this->resolveAndValidate($this->data);
+        $validated = $this->resolveAndValidate($this->settings);
 
         ThemeSettings::save($validated);
 
         Notification::make()
             ->title('Settings saved')
-            ->body('Theme settings have been updated. Some changes may require a page refresh.')
+            ->body(
+                'Theme settings have been updated. Refreshing the page to apply all changes.',
+            )
             ->success()
             ->send();
     }

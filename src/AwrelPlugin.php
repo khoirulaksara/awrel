@@ -9,9 +9,13 @@ use Khoirulaksara\Awrel\Services\HookRegistrar;
 
 class AwrelPlugin implements Plugin
 {
-    protected bool $faviconSpinnerEnabled = false;
+    /**
+     * When null, the DB settings control the feature.
+     * Set to true/false via fluent method to override DB.
+     */
+    protected ?bool $faviconSpinnerEnabled = null;
 
-    protected bool $stickyTableActionsEnabled = false;
+    protected ?bool $stickyTableActionsEnabled = null;
 
     public function getId(): string
     {
@@ -27,11 +31,8 @@ class AwrelPlugin implements Plugin
 
     public function isFaviconSpinnerEnabled(): bool
     {
-        if ($this->faviconSpinnerEnabled) {
-            return true;
-        }
-
-        return ThemeSettings::isFaviconSpinnerEnabled();
+        return $this->faviconSpinnerEnabled ??
+            ThemeSettings::isFaviconSpinnerEnabled();
     }
 
     public function stickyTableActions(bool $condition = true): static
@@ -43,18 +44,13 @@ class AwrelPlugin implements Plugin
 
     public function isStickyTableActionsEnabled(): bool
     {
-        if ($this->stickyTableActionsEnabled) {
-            return true;
-        }
-
-        return ThemeSettings::isStickyTableActionsEnabled();
+        return $this->stickyTableActionsEnabled ??
+            ThemeSettings::isStickyTableActionsEnabled();
     }
 
     public function register(Panel $panel): void
     {
-        $panel->colors([
-            'primary' => ThemeSettings::primaryColor(),
-        ]);
+        // Primary color is handled dynamically via CSS vars in render hooks.
     }
 
     public function boot(Panel $panel): void

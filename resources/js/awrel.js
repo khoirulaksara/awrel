@@ -27,15 +27,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // ═══════════════════════════════════════════════
     // ANIMATED FAVICON SPINNER (opt-in)
-    // Check for data-awrel-favicon-spinner on <html>
     // ═══════════════════════════════════════════════
     if (document.documentElement.dataset.awrelFaviconSpinner !== undefined) {
         var favicon = document.querySelector('link[rel*="icon"]');
         var originalFavicon = favicon ? favicon.href : null;
-        var spinnerFavicon = "/favicon-spinner.svg";
+        // Create inline SVG spinner as a data URI instead of requiring a file
+        var svgSpinner =
+            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z' fill='%23e0e0e0'/%3E%3Cpath d='M12 4c-4.42 0-8 3.58-8 8' fill='none' stroke='var(--color-primary-500, %23f59e0b)' stroke-width='2' stroke-linecap='round'%3E%3CanimateTransform attributeName='transform' type='rotate' from='0 12 12' to='360 12 12' dur='1s' repeatCount='indefinite'/%3E%3C/path%3E%3C/svg%3E";
 
         document.addEventListener("livewire:navigating", function () {
-            if (favicon) favicon.href = spinnerFavicon;
+            if (favicon) favicon.href = svgSpinner;
         });
 
         document.addEventListener("livewire:navigated", function () {
@@ -57,11 +58,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // ═══════════════════════════════════════════════
     // AUTOMATIC TABLE SKELETON LOADER (always-on)
-    // Creates a realistic table skeleton inside any
-    // .fi-ta-table-loading-ctn that appears in the DOM.
     // ═══════════════════════════════════════════════
-    var skeletonBarWidths = [38, 24, 30, 18, 14, 12];
-
     function createSkeletonCell(widthPercent) {
         var cell = document.createElement("div");
         cell.className = "awrel-skeleton-cell";
@@ -115,7 +112,6 @@ document.addEventListener("DOMContentLoaded", function () {
         container.appendChild(createTableSkeleton());
     }
 
-    // MutationObserver to detect table loading containers
     var skeletonObserver = new MutationObserver(function (mutations) {
         mutations.forEach(function (mutation) {
             mutation.addedNodes.forEach(function (node) {
@@ -140,7 +136,6 @@ document.addEventListener("DOMContentLoaded", function () {
         subtree: true,
     });
 
-    // Scan existing loading containers on page load
     document
         .querySelectorAll(".fi-ta-table-loading-ctn")
         .forEach(function (el) {
@@ -149,11 +144,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // ═══════════════════════════════════════════════
     // STATS OVERVIEW SKELETON LOADER (always-on)
-    // Automatically injects skeleton cards into any
-    // .fi-wi-stats-overview that appears without real
-    // .fi-wi-stats-overview-stat children yet.
     // ═══════════════════════════════════════════════
-
     function createStatsSkeleton(columnCount) {
         var skeleton = document.createElement("div");
         skeleton.className = "awrel-stats-skeleton";
@@ -199,26 +190,20 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function injectStatsSkeleton(container) {
-        // Already have skeleton or real stat cards — skip
         if (container.querySelector(".awrel-stats-skeleton")) return;
         if (container.querySelector(".fi-wi-stats-overview-stat")) return;
 
-        // Derive column count from computed grid-template-columns
         var columnCount = 4;
         try {
             var computedStyle = getComputedStyle(container);
             var gridTemplate = computedStyle.gridTemplateColumns;
             if (gridTemplate) {
                 var parts = gridTemplate.split(/\s+/);
-                // Ignore track listings like "100px 1fr 1fr" etc
-                // Only count if it's a simple repeat pattern
                 if (parts.length > 0 && parts.length <= 6) {
                     columnCount = parts.length;
                 }
             }
-        } catch (e) {
-            // Fallback to default
-        }
+        } catch (e) {}
 
         container.appendChild(createStatsSkeleton(columnCount));
         watchForRealStats(container);
@@ -248,7 +233,6 @@ document.addEventListener("DOMContentLoaded", function () {
         subtree: true,
     });
 
-    // Scan existing stats overview containers on page load
     document.querySelectorAll(".fi-wi-stats-overview").forEach(function (el) {
         injectStatsSkeleton(el);
     });
@@ -256,11 +240,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 // ═══════════════════════════════════════════════
 // STICKY TABLE ACTIONS DRAG SCROLL (opt-in)
-// Adds drag-to-scroll behavior on .fi-ta-table when
-// data-awrel-sticky-actions is present on <html>.
-// The data attribute is set via HEAD_START render hook.
 // ═══════════════════════════════════════════════
-
 function initDragScroll(table) {
     if (table.dataset.dragInitialized) return;
     table.dataset.dragInitialized = "true";
@@ -298,50 +278,123 @@ function enableDragScrolling() {
     document.querySelectorAll(".fi-ta-table").forEach(initDragScroll);
 }
 
-// Check at parse time if the data attribute is set
 if (document.documentElement.dataset.awrelStickyActions !== undefined) {
-    // <body> might not exist yet, queue adding the class for DOMContentLoaded
     document.addEventListener("DOMContentLoaded", function () {
         document.body.classList.add("awrel-sticky-actions");
         enableDragScrolling();
     });
 
-    // Re-init after Livewire navigation
     document.addEventListener("livewire:navigated", enableDragScrolling);
 }
 
 // ═══════════════════════════════════════════════
+// DYNAMIC CSS VARIABLES UPDATER
+// Updates CSS custom properties immediately when
+// a setting changes, so the user sees the effect
+// without a page refresh.
+// ═══════════════════════════════════════════════
+document.addEventListener("livewire:navigated", function () {
+    // Re-initialize after Livewire navigation if needed
+});
+
+// Hook into Livewire model updates
+if (typeof Livewire !== "undefined") {
+    Livewire.hook("commit", ({ component, respond, succeed, fail }) => {
+        succeed(({ snapshot, effects }) => {
+            // After any Livewire update, sync CSS vars
+        });
+    });
+}
+
+// ═══════════════════════════════════════════════
 // ALPINE.JS COMPONENT REGISTRATIONS
-// Used by the Awrel Theme Settings page.
 // ═══════════════════════════════════════════════
 document.addEventListener("alpine:init", () => {
     // Color Picker component
-    Alpine.data("awrelColorPicker", () => ({
+    Alpine.data("awrelColorPicker", (initialColor) => ({
         previewColor: "#f59e0b",
-        init(initialColor) {
+        init() {
             this.previewColor = initialColor || "#f59e0b";
+            // Listen for Livewire model updates to stay in sync
+            this.$watch("previewColor", (val) => {
+                // When user changes, update CSS var for live preview
+                document.documentElement.style.setProperty(
+                    "--color-primary-500",
+                    this.hexToRgb(val),
+                );
+            });
         },
         updatePreview(value) {
             this.previewColor = value;
         },
         setColor(value) {
             this.previewColor = value;
-            this.$wire.set("data.primary_color", value);
+            this.$wire.set("settings.primary_color", value);
             if (this.$refs.colorInput) {
                 this.$refs.colorInput.value = value;
+            }
+            // Immediately update the preview with a simple shade approximation
+            var rgb = this.hexToRgb(value);
+            for (var i = 50; i <= 950; i += 50) {
+                document.documentElement.style.setProperty(
+                    "--color-primary-" + i,
+                    this.shadeRgb(rgb, i),
+                );
+            }
+        },
+        hexToRgb(hex) {
+            hex = hex.replace("#", "");
+            if (hex.length === 3) {
+                hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+            }
+            var r = parseInt(hex.substring(0, 2), 16);
+            var g = parseInt(hex.substring(2, 4), 16);
+            var b = parseInt(hex.substring(4, 6), 16);
+            return r + " " + g + " " + b;
+        },
+        shadeRgb(rgb, shade) {
+            var parts = rgb.split(" ");
+            var r = parseInt(parts[0]);
+            var g = parseInt(parts[1]);
+            var b = parseInt(parts[2]);
+            // Approximate Tailwind shade generation
+            var ratio = shade / 500;
+            if (ratio <= 1) {
+                // Lighter: blend toward white
+                var t = 1 - ratio;
+                var nr = Math.round(r + (255 - r) * t);
+                var ng = Math.round(g + (255 - g) * t);
+                var nb = Math.round(b + (255 - b) * t);
+                return nr + " " + ng + " " + nb;
+            } else {
+                // Darker: blend toward black
+                var t = (shade - 500) / 450;
+                var nr = Math.round(r * (1 - t));
+                var ng = Math.round(g * (1 - t));
+                var nb = Math.round(b * (1 - t));
+                return nr + " " + ng + " " + nb;
             }
         },
     }));
 
     // Range Slider component
-    Alpine.data("awrelRangeSlider", () => ({
+    Alpine.data("awrelRangeSlider", (initialWidth) => ({
         currentWidth: 256,
-        init(initialWidth) {
+        init() {
             this.currentWidth = parseInt(initialWidth) || 256;
+            // Apply initial sidebar width
+            this.applySidebarWidth(this.currentWidth);
         },
         updateWidth(value) {
             this.currentWidth = parseInt(value) || 256;
-            this.$wire.set("data.sidebar_width", this.currentWidth);
+            this.$wire.set("settings.sidebar_width", this.currentWidth);
+            this.applySidebarWidth(this.currentWidth);
+        },
+        applySidebarWidth(width) {
+            document.documentElement.style.setProperty(
+                "--awrel-sidebar-width",
+                width + "px",
+            );
         },
     }));
 });
