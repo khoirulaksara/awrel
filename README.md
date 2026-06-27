@@ -41,11 +41,11 @@ php artisan awrel:install
 ```
 
 This single command will:
-- Publish config, views, CSS, JS, and public assets
+- Publish config, views, JS, and public assets
 - Run the database migration and seed default settings
+- Install the Awrel theme CSS (backs up your original Filament theme.css first)
 - **Auto-register** the service provider in `bootstrap/providers.php`
 - **Auto-configure** the plugin in `app/Providers/Filament/AdminPanelProvider.php`
-- **Auto-update** `vite.config.js` with the theme CSS input
 
 ### 3. Build assets
 
@@ -157,7 +157,6 @@ The theme exposes CSS custom properties that you can override:
 # Publish all assets
 php artisan vendor:publish --tag=awrel-config
 php artisan vendor:publish --tag=awrel-views
-php artisan vendor:publish --tag=awrel-css
 php artisan vendor:publish --tag=awrel-js
 php artisan vendor:publish --tag=awrel-public
 

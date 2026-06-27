@@ -35,13 +35,8 @@ class AwrelInstallCommand extends Command
             return true;
         });
 
-        $this->components->task("Publishing CSS", function () {
-            $this->callSilently("vendor:publish", [
-                "--tag" => "awrel-css",
-                "--force" => true,
-            ]);
-
-            return true;
+        $this->components->task("Installing theme CSS", function () {
+            return $this->installThemeCss();
         });
 
         $this->components->task("Publishing JS", function () {
@@ -92,10 +87,6 @@ class AwrelInstallCommand extends Command
 
         $this->wirePanelPlugin();
 
-        // ── 6. Update vite.config.js ──
-
-        $this->wireViteConfig();
-
         // ── 7. Done ──
 
         $this->components->info("Awrel Theme installed successfully.");
@@ -110,7 +101,7 @@ class AwrelInstallCommand extends Command
         );
         $this->components->twoColumnDetail(
             "<fg=green;options=bold>Theme CSS linked</>",
-            "resources/css/vendor/awrel/filament/admin/theme.css",
+            "resources/css/filament/admin/theme.css",
         );
 
         $this->newLine();
@@ -122,6 +113,43 @@ class AwrelInstallCommand extends Command
         ]);
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Install the Awrel theme CSS by overwriting the original Filament theme.css.
+     *
+     * Backs up the original if it exists, then copies the Awrel CSS
+     * to resources/css/filament/admin/theme.css.
+     */
+    protected function installThemeCss(): string
+    {
+        $target = resource_path("css/filament/admin/theme.css");
+        $source = __DIR__ . "/../../resources/css/filament/admin/theme.css";
+
+        if (!file_exists($source)) {
+            return "Skipped (package CSS not found)";
+        }
+
+        // Back up the original theme.css if it exists and isn\'t already the Awrel CSS
+        if (file_exists($target)) {
+            $originalContent = file_get_contents($target);
+            $awrelContent = file_get_contents($source);
+
+            if ($originalContent !== $awrelContent) {
+                $backup = $target . ".awrel-backup";
+                copy($target, $backup);
+            }
+        }
+
+        // Ensure the target directory exists
+        $dir = dirname($target);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        copy($source, $target);
+
+        return "Installed at resources/css/filament/admin/theme.css";
     }
 
     /**
@@ -241,25 +269,7 @@ class AwrelInstallCommand extends Command
             }
         }
 
-        // ── Update viteTheme path if needed ──
-        if (preg_match("/->viteTheme\(([^)]+)\)/", $contents, $match)) {
-            $current = trim($match[1], "'\"");
-            $desired = "resources/css/vendor/awrel/filament/admin/theme.css";
-
-            if (
-                $current !== $desired &&
-                !str_contains($current, "vendor/awrel")
-            ) {
-                $contents = str_replace(
-                    $match[0],
-                    "->viteTheme('{$desired}')",
-                    $contents,
-                );
-                $changed = true;
-            }
-        }
-
-        // ── Add ->plugin(...) before the closing semicolon of the return ──
+        // ── Add ->plugin(…) before the closing semicolon of the return ──
         $pluginCall =
             "->plugin(AwrelPlugin::make()->faviconSpinner()->stickyTableActions())";
 
@@ -288,49 +298,6 @@ class AwrelInstallCommand extends Command
                 "Wiring plugin to panel",
                 fn() => "Skipped (already configured)",
             );
-        }
-    }
-
-    /**
-     * Ensure the published theme CSS is in vite.config.js inputs.
-     */
-    protected function wireViteConfig(): void
-    {
-        $path = base_path("vite.config.js");
-
-        if (!file_exists($path)) {
-            return;
-        }
-
-        $contents = file_get_contents($path);
-        $cssPath = "resources/css/vendor/awrel/filament/admin/theme.css";
-
-        if (str_contains($contents, $cssPath)) {
-            return;
-        }
-
-        // Add the CSS to the input array if it's not there
-        $pattern = "/input:\s*\[([^\]]*)\]/s";
-        if (preg_match($pattern, $contents, $match)) {
-            $inputContent = $match[1];
-            // Find the last string entry in the input array
-            $lines = explode("\n", $inputContent);
-            $lastLine = trim(end($lines));
-            if ($lastLine === "") {
-                // Find the second-to-last line
-                $clean = array_filter($lines, fn($l) => trim($l) !== "");
-                $lastLine = end($clean);
-            }
-
-            if ($lastLine) {
-                $replacement = str_replace(
-                    $lastLine,
-                    $lastLine . "," . "\n                \"" . $cssPath . '"',
-                    $match[0],
-                );
-                $contents = str_replace($match[0], $replacement, $contents);
-                file_put_contents($path, $contents);
-            }
         }
     }
 }
