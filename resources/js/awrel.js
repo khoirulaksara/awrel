@@ -329,15 +329,20 @@ function registerAwrelAlpineComponents() {
         },
         setColor(value) {
             this.previewColor = value;
-            this.$wire.set("settings.primary_color", value);
-            if (this.$refs.colorInput) {
-                this.$refs.colorInput.value = value;
+            this.\$wire.set("settings.primary_color", value);
+            if (this.\$refs.colorInput) {
+                this.\$refs.colorInput.value = value;
             }
             var rgb = this.hexToRgb(value);
             for (var i = 50; i <= 950; i += 50) {
+                var shade = this.shadeRgb(rgb, i);
                 document.documentElement.style.setProperty(
                     "--color-primary-" + i,
-                    this.shadeRgb(rgb, i),
+                    shade,
+                );
+                document.documentElement.style.setProperty(
+                    "--primary-" + i,
+                    "rgb(" + shade + ")",
                 );
             }
         },

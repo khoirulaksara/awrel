@@ -3,13 +3,23 @@
         primaryColor: @js($settings['primary_color'] ?? '#f59e0b'),
         init() {
             this.updateColors(this.primaryColor);
+            this.updateFilamentColors();
             this.$watch('primaryColor', (val) => {
                 if (val) this.updateColors(val);
             });
             $wire.on('awrel-color-synced', (event) => {
-                if (event.color && event.color !== this.primaryColor) {
+                if (event.color) {
                     this.primaryColor = event.color;
                     this.updateColors(event.color);
+                    // Update Filament's --primary-* variables with server-calculated shades
+                    if (event.shades && typeof event.shades === 'object') {
+                        for (var shade in event.shades) {
+                            if (event.shades.hasOwnProperty(shade)) {
+                                var rgb = event.shades[shade];
+                                document.documentElement.style.setProperty('--primary-' + shade, 'rgb(' + rgb[0] + ' ' + rgb[1] + ' ' + rgb[2] + ')');
+                            }
+                        }
+                    }
                 }
             });
         },
@@ -18,7 +28,24 @@
             var rgb = this.hexToRgb(hex);
             if (! rgb) return;
             for (var i = 50; i <= 950; i += 50) {
-                document.documentElement.style.setProperty('--color-primary-' + i, this.shadeRgb(rgb, i));
+                var shade = this.shadeRgb(rgb, i);
+                // Awrel custom variable (space-separated RGB for internal use)
+                document.documentElement.style.setProperty('--color-primary-' + i, shade);
+                // Filament v5 native variable — wrap in rgb() for valid CSS
+                document.documentElement.style.setProperty('--primary-' + i, 'rgb(' + shade + ')');
+            }
+        },
+        updateFilamentColors() {
+            // On page load, also ensure --primary-* variables are visible
+            for (var i = 50; i <= 950; i += 50) {
+                var val = document.documentElement.style.getPropertyValue('--primary-' + i);
+                if (! val) {
+                    var hex = @js($settings['primary_color'] ?? '#f59e0b');
+                    var rgb = this.hexToRgb(hex);
+                    if (rgb) {
+                        document.documentElement.style.setProperty('--primary-' + i, 'rgb(' + this.shadeRgb(rgb, i) + ')');
+                    }
+                }
             }
         },
         hexToRgb(hex) {
@@ -47,6 +74,7 @@
             if (! hex || hex === '') return;
             this.primaryColor = hex;
             this.updateColors(hex);
+            this.updateFilamentColors();
             $wire.set('settings.primary_color', hex);
         }
     }"
@@ -54,26 +82,36 @@
 >
     <label class="block text-sm font-medium text-gray-900 dark:text-white">Primary Color</label>
     <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">The main accent color used across the admin panel.</p>
-    <div class="mt-3 flex items-center gap-4">
-        <input
-            type="color"
-            x-bind:value="primaryColor"
-            x-on:input="setColor($event.target.value)"
-            class="h-10 w-10 cursor-pointer rounded-lg border border-gray-300 dark:border-gray-600"
-        >
-        <div class="flex-1">
+    <div class="mt-3 flex items-center gap-4" x-data="{}" wire:key="filament-color-picker-wrapper">
+        {{-- Render Filament's ColorPicker field inline (no extra <form> tag) --}}
+        @php
+            $form = $this->getForm();
+            $colorField = $form ? $form->getComponent('settings.primary_color') : null;
+        @endphp
+        @if ($colorField)
+            {{ $colorField->render() }}
+        @else
+            {{-- Fallback native color picker if Form component unavailable --}}
             <input
-                type="text"
-                x-model="primaryColor"
-                x-on:input.debounce.300ms="setColor(primaryColor)"
-                class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 font-mono"
-                placeholder="#f59e0b"
-            />
-        </div>
-        <div class="flex h-10 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-xs font-medium text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
-            <span class="flex h-6 w-6 rounded" x-bind:style="'background-color: ' + primaryColor"></span>
-            <span x-text="primaryColor" class="font-mono tabular-nums"></span>
-        </div>
+                type="color"
+                x-bind:value="primaryColor"
+                x-on:input="setColor($event.target.value)"
+                class="h-10 w-10 cursor-pointer rounded-lg border border-gray-300 dark:border-gray-600"
+            >
+            <div class="flex-1">
+                <input
+                    type="text"
+                    x-model="primaryColor"
+                    x-on:input.debounce.300ms="setColor(primaryColor)"
+                    class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 font-mono"
+                    placeholder="#f59e0b"
+                />
+            </div>
+            <div class="flex h-10 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-xs font-medium text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                <span class="flex h-6 w-6 rounded" x-bind:style="'background-color: ' + primaryColor"></span>
+                <span x-text="primaryColor" class="font-mono tabular-nums"></span>
+            </div>
+        @endif
     </div>
 
     @php $presets = ['#f59e0b', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#6366f1', '#14b8a6']; @endphp
