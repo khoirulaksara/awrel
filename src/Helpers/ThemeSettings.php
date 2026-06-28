@@ -213,6 +213,11 @@ class ThemeSettings
         return (bool) static::get('boxed_layout', false);
     }
 
+    public static function sidebarWidth(): int
+    {
+        return (int) static::get('sidebar_width', 256);
+    }
+
     public static function sidebarPosition(): string
     {
         return static::get('sidebar_position', 'left');
