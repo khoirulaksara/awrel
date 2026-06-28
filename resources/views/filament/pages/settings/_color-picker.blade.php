@@ -80,38 +80,26 @@
     }"
     class="rounded-xl border border-gray-100 bg-gray-50/50 p-4 dark:border-gray-800 dark:bg-gray-900/50"
 >
-    <label class="block text-sm font-medium text-gray-900 dark:text-white">Primary Color</label>
-    <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">The main accent color used across the admin panel.</p>
-    <div class="mt-3 flex items-center gap-4" x-data="{}" wire:key="filament-color-picker-wrapper">
-        {{-- Render Filament's ColorPicker field inline (no extra <form> tag) --}}
-        @php
-            $form = $this->getForm();
-            $colorField = $form ? $form->getComponent('settings.primary_color') : null;
-        @endphp
-        @if ($colorField)
-            {{ $colorField->render() }}
-        @else
-            {{-- Fallback native color picker if Form component unavailable --}}
+    <div class="mt-3 flex items-center gap-4">
+        <input
+            type="color"
+            x-bind:value="primaryColor"
+            x-on:input="setColor($event.target.value)"
+            class="h-10 w-10 cursor-pointer rounded-lg border border-gray-300 dark:border-gray-600"
+        >
+        <div class="flex-1">
             <input
-                type="color"
-                x-bind:value="primaryColor"
-                x-on:input="setColor($event.target.value)"
-                class="h-10 w-10 cursor-pointer rounded-lg border border-gray-300 dark:border-gray-600"
-            >
-            <div class="flex-1">
-                <input
-                    type="text"
-                    x-model="primaryColor"
-                    x-on:input.debounce.300ms="setColor(primaryColor)"
-                    class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 font-mono"
-                    placeholder="#f59e0b"
-                />
-            </div>
-            <div class="flex h-10 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-xs font-medium text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                <span class="flex h-6 w-6 rounded" x-bind:style="'background-color: ' + primaryColor"></span>
-                <span x-text="primaryColor" class="font-mono tabular-nums"></span>
-            </div>
-        @endif
+                type="text"
+                x-model="primaryColor"
+                x-on:input.debounce.300ms="setColor(primaryColor)"
+                class="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 font-mono"
+                placeholder="#f59e0b"
+            />
+        </div>
+        <div class="flex h-10 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-xs font-medium text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+            <span class="flex h-6 w-6 rounded" x-bind:style="'background-color: ' + primaryColor"></span>
+            <span x-text="primaryColor" class="font-mono tabular-nums"></span>
+        </div>
     </div>
 
     @php $presets = ['#f59e0b', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#6366f1', '#14b8a6']; @endphp

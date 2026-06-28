@@ -4,20 +4,18 @@ namespace Khoirulaksara\Awrel\Filament\Pages;
 
 use BackedEnum;
 use Filament\Forms\Components\ColorPicker;
-use Filament\Forms\Concerns\InteractsWithForms;
-use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Schema;
 use Filament\Support\Colors\Color;
 use Illuminate\Support\Facades\Storage;
 use Khoirulaksara\Awrel\Helpers\ThemeSettings;
 use Livewire\WithFileUploads;
 use UnitEnum;
 
-class ThemeSettingsPage extends Page implements HasForms
+class ThemeSettingsPage extends Page
 {
-    use InteractsWithForms, WithFileUploads;
+    use WithFileUploads;
 
     protected static ?string $title = "Awrel Theme Settings";
 
@@ -42,32 +40,33 @@ class ThemeSettingsPage extends Page implements HasForms
     public function mount(): void
     {
         $this->settings = ThemeSettings::all();
-        $this->form->fill();
     }
 
-    public function form(Form $form): Form
+    public function colorPicker(Schema $schema): Schema
     {
-        return $form->schema([
-            ColorPicker::make("settings.primary_color")
-                ->label("Primary Color")
-                ->live()
-                ->afterStateUpdated(function ($state) {
-                    try {
-                        $shades = Color::hex($state);
-                        $this->dispatch(
-                            "awrel-color-synced",
-                            color: $state,
-                            shades: $shades,
-                        );
-                    } catch (\Throwable) {
-                        $this->dispatch(
-                            "awrel-color-synced",
-                            color: $state,
-                            shades: [],
-                        );
-                    }
-                }),
-        ]);
+        return $schema
+            ->components([
+                ColorPicker::make("primary_color")
+                    ->label("Primary Color")
+                    ->live()
+                    ->afterStateUpdated(function ($state) {
+                        try {
+                            $shades = Color::hex($state);
+                            $this->dispatch(
+                                "awrel-color-synced",
+                                color: $state,
+                                shades: $shades,
+                            );
+                        } catch (\Throwable) {
+                            $this->dispatch(
+                                "awrel-color-synced",
+                                color: $state,
+                                shades: [],
+                            );
+                        }
+                    }),
+            ])
+            ->statePath("settings.primary_color");
     }
 
     public function updated($name, $value): void
