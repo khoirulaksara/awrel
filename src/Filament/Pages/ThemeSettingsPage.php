@@ -41,7 +41,12 @@ class ThemeSettingsPage extends Page
 
     public function updated($name, $value): void
     {
-        // Sync CSS vars on livewire update
+        if (str_starts_with($name, 'settings.')) {
+            $key = (string) str($name)->after('settings.');
+            if ($key === 'primary_color') {
+                $this->dispatch('awrel-color-synced', color: $value);
+            }
+        }
     }
 
     public function save(): void
