@@ -74,6 +74,45 @@
                 </div>
             </div>
             <div class="space-y-6 px-6 py-5">
+                {{-- Logo Upload --}}
+                <div class="rounded-xl border border-gray-100 bg-gray-50/50 p-4 dark:border-gray-800 dark:bg-gray-900/50">
+                    <label class="block text-sm font-medium text-gray-900 dark:text-white">
+                        Logo
+                    </label>
+                    <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                        Upload your own logo to replace the default brand text.
+                    </p>
+                    <div class="mt-3 space-y-3">
+                        {{-- Logo preview --}}
+                        @if ($logo)
+                            <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
+                                <img src="{{ $logo->temporaryUrl() }}" class="h-10 max-w-[180px] rounded object-contain" alt="Logo preview">
+                                <span class="text-xs text-gray-500">Preview (not saved yet)</span>
+                            </div>
+                        @elseif ($settings['logo_path'] ?? false)
+                            <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
+                                <img src="{{ Storage::url($settings['logo_path']) }}" class="h-10 max-w-[180px] rounded object-contain" alt="Current logo">
+                                <span class="text-xs text-gray-500">Current logo</span>
+                                <button type="button" wire:click="removeLogo" class="ml-auto text-xs font-medium text-danger-600 hover:text-danger-500 dark:text-danger-400">
+                                    Remove
+                                </button>
+                            </div>
+                        @endif
+                        <label class="relative flex cursor-pointer items-center gap-2 rounded-lg border-2 border-dashed border-gray-300 p-4 transition-colors hover:border-primary-400 dark:border-gray-600 dark:hover:border-primary-500">
+                            <x-heroicon-m-cloud-arrow-up class="h-5 w-5 text-gray-400" />
+                            <span class="text-sm text-gray-600 dark:text-gray-400">
+                                @if ($settings['logo_path'] ?? false)
+                                    Replace logo
+                                @else
+                                    Choose an image
+                                @endif
+                            </span>
+                            <input type="file" wire:model="logo" accept="image/*" class="sr-only">
+                        </label>
+                        @error('logo') <span class="text-xs text-danger-600">{{ $message }}</span> @enderror
+                    </div>
+                </div>
+
                 {{-- Primary Color --}}
                 <div
                     x-data="awrelColorPicker('{{ $settings['primary_color'] ?? '#f59e0b' }}')"

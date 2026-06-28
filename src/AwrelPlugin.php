@@ -20,7 +20,7 @@ class AwrelPlugin implements Plugin
 
     public function getId(): string
     {
-        return "awrel-theme";
+        return 'awrel-theme';
     }
 
     public function faviconSpinner(bool $condition = true): static

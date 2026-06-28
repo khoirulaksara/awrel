@@ -34,18 +34,19 @@ class HookRegistrar
                 $font = e(ThemeSettings::fontFamily());
                 $radius = e(ThemeSettings::borderradius());
                 $radiusCssValue = match ($radius) {
-                    "sm" => "0.375rem",
-                    "md" => "0.5rem",
-                    "lg" => "0.75rem",
-                    "xl" => "1rem",
-                    "2xl" => "1.25rem",
-                    default => "1.25rem",
+                    'sm' => '0.375rem',
+                    'md' => '0.5rem',
+                    'lg' => '0.75rem',
+                    'xl' => '1rem',
+                    '2xl' => '1.25rem',
+                    default => '1.25rem',
                 };
                 $sidebarWidth = (int) ThemeSettings::sidebarWidth();
                 $primaryHex = ThemeSettings::primaryColor();
+                $logoUrl = ThemeSettings::logoUrl();
 
                 // Generate all primary color shades dynamically
-                $primaryCss = "";
+                $primaryCss = '';
                 try {
                     $shades = Color::hex($primaryHex);
                     foreach ($shades as $shade => $rgb) {
@@ -54,7 +55,6 @@ class HookRegistrar
                         }
                     }
                 } catch (\Throwable) {
-                    // Fallback if Color::hex fails
                     $primaryCss = <<<'CSS'
                         --color-primary-50: 255 248 240;
                         --color-primary-100: 255 236 213;
@@ -67,6 +67,32 @@ class HookRegistrar
                         --color-primary-800: 102 68 17;
                         --color-primary-900: 51 34 8;
                         --color-primary-950: 26 17 4;
+                    CSS;
+                }
+
+                $logoStyles = '';
+                if ($logoUrl) {
+                    $safeLogoUrl = e($logoUrl);
+                    $logoStyles = <<<CSS
+
+                    /* Custom logo — replaces default \"Laravel\" text */
+                    .fi-logo {
+                        background: url({$safeLogoUrl}) no-repeat center;
+                        background-size: contain;
+                        color: transparent !important;
+                        overflow: hidden;
+                        width: 130px;
+                        height: 2rem;
+                    }
+                    .fi-logo * {
+                        visibility: hidden;
+                    }
+
+                    .fi-sidebar-header .fi-logo {
+                        width: 100%;
+                        max-width: 180px;
+                        height: 2.5rem;
+                    }
                     CSS;
                 }
 
@@ -93,6 +119,7 @@ class HookRegistrar
                     .awrel-skeleton-card {
                         border-radius: var(--awrel-border-radius);
                     }
+                    {$logoStyles}
                 </style>
                 HTML;
             },
@@ -112,9 +139,9 @@ class HookRegistrar
         FilamentView::registerRenderHook(
             PanelsRenderHook::HEAD_START,
             function (): string {
-                $path = asset("vendor/awrel/awrel.js");
+                $path = asset('vendor/awrel/awrel.js');
 
-                return '<script defer src="' . $path . '"></script>';
+                return '<script defer src="'.$path.'"></script>';
             },
         );
     }
@@ -123,7 +150,7 @@ class HookRegistrar
     {
         FilamentView::registerRenderHook(
             PanelsRenderHook::HEAD_START,
-            fn(): string => '<script>document.documentElement.dataset.awrelFaviconSpinner = "";</script>',
+            fn (): string => '<script>document.documentElement.dataset.awrelFaviconSpinner = "";</script>',
         );
     }
 
@@ -131,7 +158,7 @@ class HookRegistrar
     {
         FilamentView::registerRenderHook(
             PanelsRenderHook::HEAD_START,
-            fn(): string => '<script>document.documentElement.dataset.awrelStickyActions = "";</script>',
+            fn (): string => '<script>document.documentElement.dataset.awrelStickyActions = "";</script>',
         );
     }
 
@@ -140,9 +167,9 @@ class HookRegistrar
      */
     private function hexToRgb(string $hex): string
     {
-        $hex = ltrim($hex, "#");
+        $hex = ltrim($hex, '#');
         if (strlen($hex) === 3) {
-            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+            $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
         }
         $r = hexdec(substr($hex, 0, 2));
         $g = hexdec(substr($hex, 2, 2));

@@ -5,11 +5,15 @@ namespace Khoirulaksara\Awrel\Filament\Pages;
 use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Storage;
 use Khoirulaksara\Awrel\Helpers\ThemeSettings;
+use Livewire\WithFileUploads;
 use UnitEnum;
 
 class ThemeSettingsPage extends Page
 {
+    use WithFileUploads;
+
     protected static ?string $title = 'Awrel Theme Settings';
 
     protected ?string $heading = 'Awrel Theme Settings';
@@ -26,6 +30,8 @@ class ThemeSettingsPage extends Page
 
     public array $settings = [];
 
+    public $logo = null;
+
     public function mount(): void
     {
         $this->settings = ThemeSettings::all();
@@ -40,9 +46,16 @@ class ThemeSettingsPage extends Page
 
     public function save(): void
     {
+        if ($this->logo) {
+            $path = $this->logo->store('awrel', 'public');
+            $this->settings['logo_path'] = $path;
+        }
+
         $validated = $this->resolveAndValidate($this->settings);
 
         ThemeSettings::save($validated);
+
+        $this->logo = null;
 
         Notification::make()
             ->title('Settings saved')
@@ -51,6 +64,22 @@ class ThemeSettingsPage extends Page
             )
             ->success()
             ->send();
+    }
+
+    public function removeLogo(): void
+    {
+        $path = ThemeSettings::logoPath();
+
+        if ($path) {
+            Storage::disk('public')->delete($path);
+        }
+
+        $this->settings['logo_path'] = null;
+        $this->logo = null;
+
+        ThemeSettings::save($this->settings);
+
+        Notification::make()->title('Logo removed')->success()->send();
     }
 
     protected function resolveAndValidate(array $data): array
@@ -62,6 +91,7 @@ class ThemeSettingsPage extends Page
             'font_family' => ['required', 'string', 'max:100'],
             'border_radius' => ['required', 'in:sm,md,lg,xl,2xl'],
             'sidebar_width' => ['required', 'integer', 'min:180', 'max:400'],
+            'logo_path' => ['nullable', 'string', 'max:255'],
         ];
 
         $messages = [];

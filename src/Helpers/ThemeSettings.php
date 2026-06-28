@@ -2,6 +2,7 @@
 
 namespace Khoirulaksara\Awrel\Helpers;
 
+use Illuminate\Support\Facades\Storage;
 use Khoirulaksara\Awrel\Models\AwrelSetting;
 
 /**
@@ -100,5 +101,27 @@ class ThemeSettings
     public static function sidebarWidth(): int
     {
         return (int) static::get('sidebar_width', 256);
+    }
+
+    public static function logoPath(): ?string
+    {
+        return static::get('logo_path');
+    }
+
+    public static function logoUrl(): ?string
+    {
+        $path = static::logoPath();
+
+        if (! $path) {
+            return null;
+        }
+
+        try {
+            return Storage::disk('public')->url(
+                $path,
+            );
+        } catch (\Throwable) {
+            return null;
+        }
     }
 }
