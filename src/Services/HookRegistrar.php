@@ -33,11 +33,19 @@ class HookRegistrar
             function (): string {
                 $font = e(ThemeSettings::fontFamily());
                 $radius = e(ThemeSettings::borderradius());
+                $radiusCssValue = match ($radius) {
+                    "sm" => "0.375rem",
+                    "md" => "0.5rem",
+                    "lg" => "0.75rem",
+                    "xl" => "1rem",
+                    "2xl" => "1.25rem",
+                    default => "1.25rem",
+                };
                 $sidebarWidth = (int) ThemeSettings::sidebarWidth();
                 $primaryHex = ThemeSettings::primaryColor();
 
                 // Generate all primary color shades dynamically
-                $primaryCss = '';
+                $primaryCss = "";
                 try {
                     $shades = Color::hex($primaryHex);
                     foreach ($shades as $shade => $rgb) {
@@ -67,6 +75,7 @@ class HookRegistrar
                     :root {
                         --awrel-font-family: "{$font}", ui-sans-serif, system-ui, sans-serif;
                         --awrel-sidebar-width: {$sidebarWidth}px;
+                        --awrel-border-radius: {$radiusCssValue};
                 {$primaryCss}
                     }
 
@@ -82,7 +91,7 @@ class HookRegistrar
                     .fi-section-header,
                     .awrel-table-skeleton-header,
                     .awrel-skeleton-card {
-                        border-radius: {$radius};
+                        border-radius: var(--awrel-border-radius);
                     }
                 </style>
                 HTML;
@@ -103,9 +112,9 @@ class HookRegistrar
         FilamentView::registerRenderHook(
             PanelsRenderHook::HEAD_START,
             function (): string {
-                $path = asset('vendor/awrel/awrel.js');
+                $path = asset("vendor/awrel/awrel.js");
 
-                return '<script defer src="'.$path.'"></script>';
+                return '<script defer src="' . $path . '"></script>';
             },
         );
     }
@@ -114,7 +123,7 @@ class HookRegistrar
     {
         FilamentView::registerRenderHook(
             PanelsRenderHook::HEAD_START,
-            fn (): string => '<script>document.documentElement.dataset.awrelFaviconSpinner = "";</script>',
+            fn(): string => '<script>document.documentElement.dataset.awrelFaviconSpinner = "";</script>',
         );
     }
 
@@ -122,7 +131,7 @@ class HookRegistrar
     {
         FilamentView::registerRenderHook(
             PanelsRenderHook::HEAD_START,
-            fn (): string => '<script>document.documentElement.dataset.awrelStickyActions = "";</script>',
+            fn(): string => '<script>document.documentElement.dataset.awrelStickyActions = "";</script>',
         );
     }
 
@@ -131,9 +140,9 @@ class HookRegistrar
      */
     private function hexToRgb(string $hex): string
     {
-        $hex = ltrim($hex, '#');
+        $hex = ltrim($hex, "#");
         if (strlen($hex) === 3) {
-            $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
         }
         $r = hexdec(substr($hex, 0, 2));
         $g = hexdec(substr($hex, 2, 2));
