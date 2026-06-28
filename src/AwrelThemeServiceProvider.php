@@ -32,6 +32,8 @@ class AwrelThemeServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
+        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+
         FilamentAsset::register(
             $this->getAssets(),
             $this->getAssetPackageName(),
