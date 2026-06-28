@@ -7,22 +7,22 @@ use Illuminate\Support\Facades\Schema;
 
 class AwrelUninstallCommand extends Command
 {
-    protected $signature = 'awrel:uninstall {--force : Skip confirmation prompt}';
+    protected $signature = "awrel:uninstall {--force : Skip confirmation prompt}";
 
-    protected $description = 'Uninstall Awrel Theme and revert all auto-wired changes';
+    protected $description = "Uninstall Awrel Theme and revert all auto-wired changes";
 
     public function handle(): int
     {
         if (
-            ! $this->option('force') &&
-            ! $this->confirm(
-                'This will remove all Awrel Theme files, settings, database table, and revert all configuration changes. Continue?',
+            !$this->option("force") &&
+            !$this->confirm(
+                "This will remove all Awrel Theme files, settings, database table, and revert all configuration changes. Continue?",
             )
         ) {
             return self::SUCCESS;
         }
 
-        $this->components->info('Uninstalling Awrel Theme...');
+        $this->components->info("Uninstalling Awrel Theme...");
 
         // ── 1. Revert AdminPanelProvider.php ──
         $this->revertPanelPlugin();
@@ -42,7 +42,7 @@ class AwrelUninstallCommand extends Command
         // ── 6. Clean stale vite.config.js references ──
         $this->fixViteConfig();
 
-        $this->components->info('Awrel Theme uninstalled successfully.');
+        $this->components->info("Awrel Theme uninstalled successfully.");
 
         return self::SUCCESS;
     }
@@ -52,11 +52,11 @@ class AwrelUninstallCommand extends Command
      */
     protected function revertPanelPlugin(): void
     {
-        $panelPath = app_path('Providers/Filament/AdminPanelProvider.php');
+        $panelPath = app_path("Providers/Filament/AdminPanelProvider.php");
 
-        if (! file_exists($panelPath)) {
+        if (!file_exists($panelPath)) {
             $this->components->warn(
-                'AdminPanelProvider.php not found. Skipping panel cleanup.',
+                "AdminPanelProvider.php not found. Skipping panel cleanup.",
             );
 
             return;
@@ -69,12 +69,12 @@ class AwrelUninstallCommand extends Command
         // Remove use statements
         $contents = preg_replace(
             '/^use Khoirulaksara\\\\Awrel\\\\AwrelPlugin;\s*$/m',
-            '',
+            "",
             $contents,
         );
         $contents = preg_replace(
             '/^use Khoirulaksara\\\\Awrel\\\\Filament\\\\Pages\\\\ThemeSettingsPage;\s*$/m',
-            '',
+            "",
             $contents,
         );
 
@@ -83,9 +83,12 @@ class AwrelUninstallCommand extends Command
         // injected call up to the first `);` which closes the statement.
         $contents = preg_replace(
             "/\s*->plugin\(AwrelPlugin::make.*?\);/s",
-            '',
+            "",
             $contents,
         );
+
+        // Remove ->viteTheme(...) call
+        $contents = preg_replace("/\s*->viteTheme\([^)]+\)/", "", $contents);
 
         // Remove whitespace left from empty lines after removal
         $contents = preg_replace('/\n{3,}/', "\n\n", $contents);
@@ -94,7 +97,7 @@ class AwrelUninstallCommand extends Command
         // Preserves Dashboard::class if it's the only remaining page.
         $contents = preg_replace(
             "/,\s*ThemeSettingsPage::class/",
-            '',
+            "",
             $contents,
         );
 
@@ -104,10 +107,10 @@ class AwrelUninstallCommand extends Command
         }
 
         $this->components->task(
-            'Reverting plugin registration',
-            fn () => $changed
-                ? 'Removed from AdminPanelProvider'
-                : 'Skipped (not found)',
+            "Reverting plugin registration",
+            fn() => $changed
+                ? "Removed from AdminPanelProvider"
+                : "Skipped (not found)",
         );
     }
 
@@ -116,11 +119,11 @@ class AwrelUninstallCommand extends Command
      */
     protected function revertServiceProvider(): void
     {
-        $path = base_path('bootstrap/providers.php');
+        $path = base_path("bootstrap/providers.php");
 
-        if (! file_exists($path)) {
+        if (!file_exists($path)) {
             $this->components->warn(
-                'bootstrap/providers.php not found. Skipping.',
+                "bootstrap/providers.php not found. Skipping.",
             );
 
             return;
@@ -132,14 +135,14 @@ class AwrelUninstallCommand extends Command
         // Remove use statement
         $contents = preg_replace(
             '/^use Khoirulaksara\\\\Awrel\\\\AwrelThemeServiceProvider;\s*$/m',
-            '',
+            "",
             $contents,
         );
 
         // Remove class from return array
         $contents = preg_replace(
             "/\s+AwrelThemeServiceProvider::class,\s*/",
-            '',
+            "",
             $contents,
         );
 
@@ -152,10 +155,10 @@ class AwrelUninstallCommand extends Command
         }
 
         $this->components->task(
-            'Reverting service provider',
-            fn () => $changed
-                ? 'Removed from bootstrap/providers.php'
-                : 'Skipped (not found)',
+            "Reverting service provider",
+            fn() => $changed
+                ? "Removed from bootstrap/providers.php"
+                : "Skipped (not found)",
         );
     }
 
@@ -164,26 +167,26 @@ class AwrelUninstallCommand extends Command
      */
     protected function restoreThemeCss(): void
     {
-        $target = resource_path('css/filament/admin/theme.css');
-        $backup = $target.'.awrel-backup';
+        $target = resource_path("css/filament/admin/theme.css");
+        $backup = $target . ".awrel-backup";
 
         if (file_exists($backup)) {
             copy($backup, $target);
             unlink($backup);
 
             $this->components->task(
-                'Restoring theme CSS',
-                fn () => 'Restored from backup',
+                "Restoring theme CSS",
+                fn() => "Restored from backup",
             );
         } elseif (file_exists($target)) {
             unlink($target);
 
             $this->components->task(
-                'Removing theme CSS',
-                fn () => 'Removed (no backup found)',
+                "Removing theme CSS",
+                fn() => "Removed (no backup found)",
             );
         } else {
-            $this->components->task('Theme CSS', fn () => 'Skipped (not found)');
+            $this->components->task("Theme CSS", fn() => "Skipped (not found)");
         }
     }
 
@@ -192,17 +195,17 @@ class AwrelUninstallCommand extends Command
      */
     protected function dropSettingsTable(): void
     {
-        if (Schema::hasTable('awrel_settings')) {
-            Schema::dropIfExists('awrel_settings');
+        if (Schema::hasTable("awrel_settings")) {
+            Schema::dropIfExists("awrel_settings");
 
             $this->components->task(
-                'Dropping settings table',
-                fn () => 'Dropped awrel_settings',
+                "Dropping settings table",
+                fn() => "Dropped awrel_settings",
             );
         } else {
             $this->components->task(
-                'Dropping settings table',
-                fn () => 'Skipped (table not found)',
+                "Dropping settings table",
+                fn() => "Skipped (table not found)",
             );
         }
     }
@@ -213,10 +216,10 @@ class AwrelUninstallCommand extends Command
     protected function removePublishedAssets(): void
     {
         $paths = [
-            config_path('awrel.php'),
-            resource_path('views/vendor/awrel'),
-            resource_path('js/vendor/awrel'),
-            public_path('vendor/awrel'),
+            config_path("awrel.php"),
+            resource_path("views/vendor/awrel"),
+            resource_path("js/vendor/awrel"),
+            public_path("vendor/awrel"),
         ];
 
         $count = 0;
@@ -231,8 +234,8 @@ class AwrelUninstallCommand extends Command
         }
 
         $this->components->task(
-            'Removing published assets',
-            fn () => "Removed {$count} assets",
+            "Removing published assets",
+            fn() => "Removed {$count} assets",
         );
     }
 
@@ -241,7 +244,7 @@ class AwrelUninstallCommand extends Command
      */
     protected function rmdirRecursive(string $dir): void
     {
-        if (! is_dir($dir)) {
+        if (!is_dir($dir)) {
             return;
         }
 
@@ -265,21 +268,33 @@ class AwrelUninstallCommand extends Command
     }
 
     /**
-     * Remove stale Awrel vendor CSS references from vite.config.js.
+     * Remove Awrel theme CSS references from vite.config.js.
+     *
+     * 1. Removes any stale vendor-path CSS references from old installs.
+     * 2. Removes 'resources/css/filament/admin/theme.css' from the
+     *    input array.
      */
     protected function fixViteConfig(): void
     {
-        $vitePath = base_path('vite.config.js');
+        $vitePath = base_path("vite.config.js");
 
-        if (! file_exists($vitePath)) {
+        if (!file_exists($vitePath)) {
             return;
         }
 
         $contents = file_get_contents($vitePath);
         $original = $contents;
 
+        // 1. Remove stale vendor CSS references
         $contents = preg_replace(
             '/\s*[\'"][^\'"]*resources\/css\/vendor\/awrel[^\'"]*[\'"][,\s]*\n?/',
+            "\n",
+            $contents,
+        );
+
+        // 2. Remove the current theme CSS path from the input array
+        $contents = preg_replace(
+            '/\s*[\'"]resources\/css\/filament\/admin\/theme\.css[\'"][,\s]*\n?/',
             "\n",
             $contents,
         );
