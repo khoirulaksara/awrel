@@ -6,10 +6,13 @@
 
 ![Awrel Theme Banner](assets/awrel-banner.png)
 
-**Premium dashboard theme plugin for Filament v5** — high-end micro-interactions, skeleton loaders, glassmorphism, sticky table actions, and more. Breaks away from the mainstream Tailwind UI look with custom modern layouts and visual enhancements.
+**Premium dashboard theme plugin for Filament v3.x** — high-end micro-interactions, skeleton loaders, glassmorphism, sticky table actions, and more. Breaks away from the mainstream Tailwind UI look with custom modern layouts and visual enhancements.
 
 ## Features
 
+- **Custom Branding** - Upload your own logo for the admin panel.
+- **Login Page Customization** - Choose layout, background color, and background image for the login page.
+- **Layout Variants** - Switch between sidebar or horizontal navigation, enable boxed layout, and set sidebar position.
 - **Skeleton Loaders** — Automatic table & stats overview skeleton placeholders using `deferLoading()`.
 - **Sticky Table Actions** — Pin the actions column on horizontal table scroll (opt-in).
 - **Loading Bar** — Livewire request progress bar at the top of the viewport.
@@ -28,7 +31,7 @@
 
 - PHP 8.2+
 - Laravel 11.x, 12.x, or 13.x
-- Filament 5.x
+- Filament 3.x
 - Livewire 4.x
 - Tailwind CSS v4
 
@@ -86,8 +89,8 @@ Navigate to **Settings → Awrel Theme Settings** in your Filament admin panel t
 
 ```php
 AwrelPlugin::make()
-    ->faviconSpinner()              // Enable animated favicon spinner
-    ->stickyTableActions()          // Enable sticky table actions column
+	    ->faviconSpinner()              // Enable animated favicon spinner (can be overridden by DB settings)
+	    ->stickyTableActions()          // Enable sticky table actions column (can be overridden by DB settings)
 ```
 
 Both options can also be toggled from the Theme Settings page in the admin panel.
@@ -138,12 +141,24 @@ Modern frosted-glass effect (`backdrop-filter: blur()`) on the top navigation ba
 
 Navigate to **Settings → Awrel Theme Settings** in your Filament admin panel to customize:
 
-- **Primary Color** — Pick any color with the color picker or presets
-- **Font Family** — Choose from Plus Jakarta Sans, Inter, Instrument Sans, or system-ui
-- **Border Radius** — sm, md, lg, xl, or 2xl
-- **Sidebar Width** — Adjustable from 180px to 400px
-- **Favicon Spinner** — Toggle on/off
-- **Sticky Table Actions** — Toggle on/off
+- **General:**
+    - **Favicon Spinner** — Toggle on/off
+    - **Sticky Table Actions** — Toggle on/off
+- **Branding:**
+    - **Logo** — Upload your custom logo
+- **Appearance:**
+    - **Primary Color** — Pick any color with the color picker
+    - **Font Family** — Choose from Plus Jakarta Sans, Inter, Instrument Sans, or system-ui
+    - **Border Radius** — sm, md, lg, xl, or 2xl
+- **Login Page:**
+    - **Login Page Layout** — Choose between centered or split layout
+    - **Login Background Color** — Set a background color
+    - **Login Background Image** — Upload a background image
+- **Layout:**
+    - **Layout Variant** — Choose between sidebar or horizontal navigation
+    - **Boxed Layout** — Toggle for main content area
+    - **Sidebar Position** — Set sidebar to left or right
+    - **Sidebar Width** — Adjustable from 180px to 400px
 
 ### CSS Custom Properties
 
