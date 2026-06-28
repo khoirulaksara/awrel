@@ -263,36 +263,53 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // ── LIVEWIRE LIFECYCLE HOOK INTEGRATION ──────────────────────────────────
-    let activeRequests = 0;
+    let isNavigating = false;
+    let activeProgressCount = 0;
 
-    function handleRequestStart() {
-        activeRequests++;
-        if (activeRequests === 1) {
+    function triggerStartProgress() {
+        activeProgressCount++;
+        if (activeProgressCount === 1) {
             startProgress();
-            startFaviconSpinner();
         }
     }
 
-    function handleRequestEnd() {
-        activeRequests--;
-        if (activeRequests <= 0) {
-            activeRequests = 0;
+    function triggerEndProgress() {
+        activeProgressCount--;
+        if (activeProgressCount <= 0) {
+            activeProgressCount = 0;
             endProgress();
-            stopFaviconSpinner();
         }
     }
 
-    // Handle wire:navigate events
-    document.addEventListener("livewire:navigating", handleRequestStart);
-    document.addEventListener("livewire:navigated", handleRequestEnd);
+    // Handle wire:navigate events (switching menus)
+    document.addEventListener("livewire:navigating", function () {
+        isNavigating = true;
+        triggerStartProgress();
+        startFaviconSpinner();
+    });
 
-    // Hook into general Livewire requests (form submissions, table filters)
+    document.addEventListener("livewire:navigated", function () {
+        isNavigating = false;
+        triggerEndProgress();
+        stopFaviconSpinner();
+    });
+
+    // Hook into general Livewire requests (form submissions, table filters, save action)
     document.addEventListener("livewire:init", function () {
         if (typeof Livewire !== 'undefined') {
             Livewire.hook("request", ({ succeed, fail }) => {
-                handleRequestStart();
-                succeed(handleRequestEnd);
-                fail(handleRequestEnd);
+                // If it is a page/menu navigation request, the loading bar is already handled by livewire:navigating
+                if (isNavigating) return;
+
+                triggerStartProgress();
+
+                succeed(function () {
+                    triggerEndProgress();
+                });
+
+                fail(function () {
+                    triggerEndProgress();
+                });
             });
         }
     });
