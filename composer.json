@@ -1,5 +1,5 @@
 {
-    "version": "1.5.1",
+    "version": "1.5.2",
     "description": "Premium dashboard theme plugin for Filament v5 with micro-interactions, skeleton loaders, glassmorphism, sticky table actions, and more.",
     "type": "library",
     "license": "MIT",

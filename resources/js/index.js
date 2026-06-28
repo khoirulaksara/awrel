@@ -48,8 +48,16 @@ document.addEventListener("DOMContentLoaded", function () {
         updateLoadingBarColor();
     }
 
+    function ensureLoadingBar() {
+        if (!loadingBar) return;
+        if (!document.body.contains(loadingBar)) {
+            document.body.appendChild(loadingBar);
+        }
+    }
+
     function startProgress() {
         if (!loadingBar) return;
+        ensureLoadingBar();
         updateLoadingBarColor();
         if (progressInterval) clearInterval(progressInterval);
         progressWidth = 0;
@@ -70,6 +78,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function endProgress() {
         if (!loadingBar) return;
+        ensureLoadingBar();
         if (progressInterval) clearInterval(progressInterval);
         loadingBar.style.transition = 'width 0.2s ease, opacity 0.3s ease';
         loadingBar.style.width = '100%';
@@ -366,7 +375,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    skeletonObserver.observe(document.body, {
+    skeletonObserver.observe(document.documentElement, {
         childList: true,
         subtree: true,
     });
@@ -463,7 +472,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    statsObserver.observe(document.body, {
+    statsObserver.observe(document.documentElement, {
         childList: true,
         subtree: true,
     });
@@ -510,9 +519,15 @@ document.addEventListener("DOMContentLoaded", function () {
         document.querySelectorAll(".fi-ta-table").forEach(initDragScroll);
     }
 
+    function applyStickyActions() {
+        if (document.documentElement.dataset.awrelStickyActions !== undefined) {
+            document.body.classList.add("awrel-sticky-actions");
+            enableDragScrolling();
+        }
+    }
+
     if (document.documentElement.dataset.awrelStickyActions !== undefined) {
-        document.body.classList.add("awrel-sticky-actions");
-        enableDragScrolling();
-        document.addEventListener("livewire:navigated", enableDragScrolling);
+        applyStickyActions();
+        document.addEventListener("livewire:navigated", applyStickyActions);
     }
 });
