@@ -169,9 +169,3 @@ php artisan vendor:publish --tag=awrel-public
 # Or publish specific tags
 php artisan vendor:publish --tag=awrel-config
 ```
-
-
-
-## License
-
-MIT
