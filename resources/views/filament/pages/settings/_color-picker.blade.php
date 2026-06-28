@@ -6,6 +6,12 @@
             this.$watch('primaryColor', (val) => {
                 if (val) this.updateColors(val);
             });
+            $wire.on('awrel-color-synced', (event) => {
+                if (event.color && event.color !== this.primaryColor) {
+                    this.primaryColor = event.color;
+                    this.updateColors(event.color);
+                }
+            });
         },
         updateColors(hex) {
             if (! hex || hex === '') return;
