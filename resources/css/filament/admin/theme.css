@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "../../../../vendor/filament/filament/resources/css/theme.css";
+/* @import "tailwindcss"; */
+/* @import "../../../../vendor/filament/filament/resources/css/theme.css"; */
 
 /*
  * Explicitly tell Tailwind v4 to scan Awrel views for class names.
@@ -128,14 +128,14 @@
 }
 
 /* Card & panel */
-.fi-section,
+.fi-section:not(.fi-section-not-contained),
 .fi-wi-stats-overview-stat,
 .fi-ta-ctn {
     @apply border-gray-200 bg-white shadow-xs dark:border-gray-800 dark:bg-gray-900;
 }
 
 /* --- Light Mode theme-matching containers and elements --- */
-html:not(.dark) .fi-section,
+html:not(.dark) .fi-section:not(.fi-section-not-contained),
 html:not(.dark) .fi-wi-stats-overview-stat,
 html:not(.dark) .fi-ta-ctn,
 html:not(.dark) .fi-dropdown-panel,
@@ -146,7 +146,7 @@ html:not(.dark) .fi-modal-window {
 }
 
 /* --- Dark Mode theme-matching containers and elements --- */
-.dark .fi-section,
+.dark .fi-section:not(.fi-section-not-contained),
 .dark .fi-wi-stats-overview-stat,
 .dark .fi-ta-ctn,
 .dark .fi-dropdown-panel,

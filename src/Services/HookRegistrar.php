@@ -20,6 +20,10 @@ class HookRegistrar
             $this->registerFaviconSpinner();
         }
 
+        if ($this->awrelPlugin->isLoadingBarEnabled()) {
+            $this->registerLivewireLoadingBar();
+        }
+
         if ($this->awrelPlugin->isStickyTableActionsEnabled()) {
             $this->registerStickyTableActions();
         }
@@ -57,6 +61,9 @@ class HookRegistrar
                         if (is_array($rgb) && count($rgb) === 3) {
                             $primaryCss .= "    --color-primary-{$shade}: {$rgb[0]} {$rgb[1]} {$rgb[2]}; \n";
                             $primaryCss .= "    --primary-{$shade}: {$rgb[0]} {$rgb[1]} {$rgb[2]}; \n";
+                        } elseif (is_string($rgb)) {
+                            $primaryCss .= "    --color-primary-{$shade}: {$rgb}; \n";
+                            $primaryCss .= "    --primary-{$shade}: {$rgb}; \n";
                         }
                     }
                 } catch (\Throwable) {
@@ -264,7 +271,18 @@ class HookRegistrar
                     CSS;
                 }
 
+                $fontUrlName = str_replace(' ', '+', $font);
+                $fontLink = '';
+                if ($font && !in_array(strtolower($font), ['sans-serif', 'serif', 'monospace', 'system-ui'])) {
+                    $fontLink = <<<HTML
+                    <link rel="preconnect" href="https://fonts.googleapis.com">
+                    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                    <link href="https://fonts.googleapis.com/css2?family={$fontUrlName}:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+                    HTML;
+                }
+
                 return <<<HTML
+                {$fontLink}
                 <style>
                     :root {
                         --awrel-font-family: "{$font}", ui-sans-serif, system-ui, sans-serif;
@@ -273,7 +291,13 @@ class HookRegistrar
                 {$primaryCss}
                     }
 
-                    .fi-section,
+                    :root, html, body, .fi-body {
+                        --font-sans: "{$font}", ui-sans-serif, system-ui, sans-serif !important;
+                        --font-family-sans: "{$font}", ui-sans-serif, system-ui, sans-serif !important;
+                        font-family: "{$font}", ui-sans-serif, system-ui, sans-serif !important;
+                    }
+
+                    .fi-section:not(.fi-section-not-contained),
                     .fi-wi-stats-overview-stat,
                     .fi-ta-ctn,
                     .fi-dropdown-panel,
@@ -309,6 +333,14 @@ class HookRegistrar
         FilamentView::registerRenderHook(
             PanelsRenderHook::HEAD_START,
             fn(): string => '<script>document.documentElement.dataset.awrelStickyActions = "";</script>',
+        );
+    }
+
+    private function registerLivewireLoadingBar(): void
+    {
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::HEAD_START,
+            fn(): string => '<script>document.documentElement.dataset.awrelLoadingBar = "";</script>',
         );
     }
 

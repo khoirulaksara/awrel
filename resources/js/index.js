@@ -6,45 +6,287 @@
 // Non-Alpine DOM Features
 // ─────────────────────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", function () {
-    // ── LOADING BAR (always-on) ────────────────────────────────────────────
-    const loadingBar = document.createElement("div");
-    loadingBar.id = "awrel-loading-bar";
-    loadingBar.style.position = "fixed";
-    loadingBar.style.top = "0";
-    loadingBar.style.left = "0";
-    loadingBar.style.width = "0%";
-    loadingBar.style.height = "3px";
-    loadingBar.style.backgroundColor = "var(--color-primary-500)";
-    loadingBar.style.transition = "width 0.3s ease";
-    loadingBar.style.zIndex = "9999";
-    document.body.appendChild(loadingBar);
+    // ── LOADING BAR (opt-in via dataset) ───────────────────────────────────
+    let loadingBar = null;
+    let progressInterval = null;
+    let progressWidth = 0;
 
-    document.addEventListener("livewire:navigating", function () {
-        loadingBar.style.width = "30%";
-    });
-
-    document.addEventListener("livewire:navigated", function () {
-        loadingBar.style.width = "100%";
-        setTimeout(function () {
-            loadingBar.style.width = "0%";
-        }, 300);
-    });
-
-    // ── ANIMATED FAVICON SPINNER (opt-in) ─────────────────────────────────
-    if (document.documentElement.dataset.awrelFaviconSpinner !== undefined) {
-        const favicon = document.querySelector('link[rel*="icon"]');
-        const originalFavicon = favicon ? favicon.href : null;
-        const svgSpinner =
-            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z' fill='%23e0e0e0'/%3E%3Cpath d='M12 4c-4.42 0-8 3.58-8 8' fill='none' stroke='var(--color-primary-500, %23f59e0b)' stroke-width='2' stroke-linecap='round'%3E%3CanimateTransform attributeName='transform' type='rotate' from='0 12 12' to='360 12 12' dur='1s' repeatCount='indefinite'/%3E%3C/path%3E%3C/svg%3E";
-
-        document.addEventListener("livewire:navigating", function () {
-            if (favicon) favicon.href = svgSpinner;
-        });
-
-        document.addEventListener("livewire:navigated", function () {
-            if (favicon && originalFavicon) favicon.href = originalFavicon;
-        });
+    function updateLoadingBarColor() {
+        if (!loadingBar) return;
+        const computed = getComputedStyle(document.documentElement).getPropertyValue('--color-primary-500') 
+            || getComputedStyle(document.documentElement).getPropertyValue('--primary-500')
+            || '245 158 11';
+        
+        let color = computed.trim();
+        if (/^\d+\s+\d+\s+\d+$/.test(color)) {
+            color = `rgb(${color.split(/\s+/).join(',')})`;
+        } else if (!color.startsWith('#') && !color.startsWith('rgb') && !color.startsWith('oklch') && !color.startsWith('hsl') && !color.startsWith('var')) {
+            color = `rgb(${color})`;
+        }
+        
+        loadingBar.style.backgroundColor = color;
+        loadingBar.style.boxShadow = `0 1px 10px ${color}, 0 0 3px ${color}`;
     }
+
+    if (document.documentElement.dataset.awrelLoadingBar !== undefined) {
+        loadingBar = document.createElement("div");
+        loadingBar.id = "awrel-loading-bar";
+        loadingBar.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 5px;
+            background-color: #f59e0b;
+            box-shadow: 0 1px 10px #f59e0b, 0 0 3px #f59e0b;
+            z-index: 2147483647;
+            pointer-events: none;
+            opacity: 0;
+            transition: width 0.2s ease, opacity 0.3s ease;
+        `;
+        document.body.appendChild(loadingBar);
+        updateLoadingBarColor();
+    }
+
+    function startProgress() {
+        if (!loadingBar) return;
+        updateLoadingBarColor();
+        if (progressInterval) clearInterval(progressInterval);
+        progressWidth = 0;
+        loadingBar.style.transition = 'none';
+        loadingBar.style.width = '0%';
+        loadingBar.style.opacity = '1';
+        loadingBar.offsetHeight; // force reflow
+        loadingBar.style.transition = 'width 0.4s cubic-bezier(0.08, 0.82, 0.17, 1), opacity 0.3s ease';
+        progressWidth = 20;
+        loadingBar.style.width = progressWidth + '%';
+        progressInterval = setInterval(() => {
+            if (progressWidth < 85) {
+                progressWidth += Math.random() * 5;
+                loadingBar.style.width = progressWidth + '%';
+            }
+        }, 250);
+    }
+
+    function endProgress() {
+        if (!loadingBar) return;
+        if (progressInterval) clearInterval(progressInterval);
+        loadingBar.style.transition = 'width 0.2s ease, opacity 0.3s ease';
+        loadingBar.style.width = '100%';
+        setTimeout(() => {
+            loadingBar.style.opacity = '0';
+            setTimeout(() => {
+                loadingBar.style.width = '0%';
+            }, 300);
+        }, 200);
+    }
+
+    // ── ANIMATED FAVICON SPINNER (opt-in via dataset) ─────────────────────
+    let isSpinnerActive = false;
+    let faviconAnimationId = null;
+    let faviconCanvas = null;
+    let faviconCtx = null;
+    let faviconImage = null;
+    let faviconAngle = 0;
+    let isFaviconImageLoaded = false;
+    let originalFaviconHrefs = new Map();
+    let originalFaviconTypes = new Map();
+
+    function isFaviconSpinnerEnabled() {
+        return document.documentElement.dataset.awrelFaviconSpinner !== undefined;
+    }
+
+    function getFaviconElements() {
+        return Array.from(document.querySelectorAll('link[rel*="icon"]'));
+    }
+
+    function getPrimaryColor() {
+        const computed = getComputedStyle(document.documentElement).getPropertyValue('--color-primary-500') 
+            || getComputedStyle(document.documentElement).getPropertyValue('--primary-500') 
+            || '245 158 11';
+        let color = computed.trim();
+        if (/^\d+\s+\d+\s+\d+$/.test(color)) {
+            return `rgb(${color.split(/\s+/).join(',')})`;
+        } else if (!color.startsWith('#') && !color.startsWith('rgb') && !color.startsWith('oklch') && !color.startsWith('hsl') && !color.startsWith('var')) {
+            return `rgb(${color})`;
+        }
+        return color;
+    }
+
+    function initFaviconAnimation() {
+        if (!isFaviconSpinnerEnabled()) return;
+        
+        const elements = getFaviconElements();
+        if (elements.length === 0) return;
+
+        // Populate original attributes if not already tracked
+        elements.forEach(el => {
+            if (!originalFaviconHrefs.has(el)) {
+                originalFaviconHrefs.set(el, el.getAttribute('href') || '');
+                originalFaviconTypes.set(el, el.getAttribute('type') || '');
+            }
+        });
+
+        if (faviconImage) return;
+
+        // Use the first icon's href to load the image
+        const baseHref = elements[0].getAttribute('href');
+        faviconImage = new Image();
+        
+        // Only set crossOrigin if it is truly cross-origin
+        if (baseHref && (baseHref.startsWith('http://') || baseHref.startsWith('https://'))) {
+            try {
+                const url = new URL(baseHref);
+                if (url.origin !== window.location.origin) {
+                    faviconImage.crossOrigin = "anonymous";
+                }
+            } catch (e) {}
+        }
+
+        faviconImage.onload = function () {
+            isFaviconImageLoaded = true;
+        };
+        faviconImage.onerror = function () {
+            isFaviconImageLoaded = false;
+        };
+        faviconImage.src = baseHref;
+
+        faviconCanvas = document.createElement('canvas');
+        faviconCanvas.width = 32;
+        faviconCanvas.height = 32;
+        faviconCtx = faviconCanvas.getContext('2d');
+    }
+
+    function animateFavicon() {
+        if (!isSpinnerActive || !faviconCtx) return;
+
+        const primaryColor = getPrimaryColor();
+        faviconCtx.clearRect(0, 0, 32, 32);
+
+        if (isFaviconImageLoaded && faviconImage) {
+            // Draw coin flip animation using original favicon image
+            faviconAngle += 0.12;
+            const scaleX = Math.cos(faviconAngle);
+
+            faviconCtx.save();
+            faviconCtx.translate(16, 16);
+            faviconCtx.scale(scaleX, 1);
+            try {
+                faviconCtx.drawImage(faviconImage, -16, -16, 32, 32);
+            } catch (e) {
+                // If drawImage fails (e.g. tainted canvas or SVG issues), fallback to drawing a solid circle
+                faviconCtx.beginPath();
+                faviconCtx.arc(0, 0, 12, 0, Math.PI * 2);
+                faviconCtx.fillStyle = primaryColor;
+                faviconCtx.fill();
+            }
+
+            // Draw primary indicator at mid-rotation
+            if (Math.abs(scaleX) < 0.2) {
+                faviconCtx.strokeStyle = primaryColor;
+                faviconCtx.lineWidth = 4;
+                faviconCtx.beginPath();
+                faviconCtx.moveTo(0, -16);
+                faviconCtx.lineTo(0, 16);
+                faviconCtx.stroke();
+            }
+            faviconCtx.restore();
+        } else {
+            // Fallback spinner ring while image is loading or if it failed
+            faviconAngle += 0.15;
+            faviconCtx.save();
+            faviconCtx.translate(16, 16);
+            faviconCtx.rotate(faviconAngle);
+            faviconCtx.strokeStyle = primaryColor;
+            faviconCtx.lineWidth = 4;
+            faviconCtx.beginPath();
+            faviconCtx.arc(0, 0, 12, 0, Math.PI * 1.5);
+            faviconCtx.stroke();
+            faviconCtx.restore();
+        }
+
+        const dataUrl = faviconCanvas.toDataURL('image/png');
+        const elements = getFaviconElements();
+        elements.forEach(el => {
+            el.setAttribute('href', dataUrl);
+            el.setAttribute('type', 'image/png');
+        });
+
+        faviconAnimationId = requestAnimationFrame(animateFavicon);
+    }
+
+    function startFaviconSpinner() {
+        if (!isFaviconSpinnerEnabled() || isSpinnerActive) return;
+        isSpinnerActive = true;
+        faviconAngle = 0;
+        
+        initFaviconAnimation();
+        animateFavicon();
+    }
+
+    function stopFaviconSpinner() {
+        if (!isSpinnerActive) return;
+        isSpinnerActive = false;
+
+        if (faviconAnimationId) {
+            cancelAnimationFrame(faviconAnimationId);
+            faviconAnimationId = null;
+        }
+
+        // Restore original favicons
+        const elements = getFaviconElements();
+        elements.forEach(el => {
+            const origHref = originalFaviconHrefs.get(el);
+            const origType = originalFaviconTypes.get(el);
+            if (origHref) {
+                el.setAttribute('href', origHref);
+                if (origType) {
+                    el.setAttribute('type', origType);
+                } else {
+                    el.removeAttribute('type');
+                }
+            }
+        });
+
+        // Clear tracking maps to avoid memory leaks
+        originalFaviconHrefs.clear();
+        originalFaviconTypes.clear();
+    }
+
+    // ── LIVEWIRE LIFECYCLE HOOK INTEGRATION ──────────────────────────────────
+    let activeRequests = 0;
+
+    function handleRequestStart() {
+        activeRequests++;
+        if (activeRequests === 1) {
+            startProgress();
+            startFaviconSpinner();
+        }
+    }
+
+    function handleRequestEnd() {
+        activeRequests--;
+        if (activeRequests <= 0) {
+            activeRequests = 0;
+            endProgress();
+            stopFaviconSpinner();
+        }
+    }
+
+    // Handle wire:navigate events
+    document.addEventListener("livewire:navigating", handleRequestStart);
+    document.addEventListener("livewire:navigated", handleRequestEnd);
+
+    // Hook into general Livewire requests (form submissions, table filters)
+    document.addEventListener("livewire:init", function () {
+        if (typeof Livewire !== 'undefined') {
+            Livewire.hook("request", ({ succeed, fail }) => {
+                handleRequestStart();
+                succeed(handleRequestEnd);
+                fail(handleRequestEnd);
+            });
+        }
+    });
 
     // ── DISABLED BUTTON SHAKE (always-on) ─────────────────────────────────
     document.addEventListener("click", function (e) {

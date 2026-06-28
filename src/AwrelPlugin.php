@@ -21,6 +21,8 @@ class AwrelPlugin implements Plugin
 
     protected ?bool $stickyTableActionsEnabled = null;
 
+    protected ?bool $loadingBarEnabled = null;
+
     public function getId(): string
     {
         return "awrel-theme";
@@ -50,6 +52,19 @@ class AwrelPlugin implements Plugin
     {
         return $this->stickyTableActionsEnabled ??
             ThemeSettings::isStickyTableActionsEnabled();
+    }
+
+    public function loadingBar(bool $condition = true): static
+    {
+        $this->loadingBarEnabled = $condition;
+
+        return $this;
+    }
+
+    public function isLoadingBarEnabled(): bool
+    {
+        return $this->loadingBarEnabled ??
+            ThemeSettings::isLoadingBarEnabled();
     }
 
     public function register(Panel $panel): void

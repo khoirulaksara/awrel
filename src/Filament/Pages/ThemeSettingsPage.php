@@ -70,6 +70,12 @@ class ThemeSettingsPage extends Page implements HasForms
                                 ->helperText(
                                     "Pin actions column on table horizontal scroll",
                                 ),
+                            Toggle::make("loading_bar")
+                                ->label("Livewire Loading Bar")
+                                ->helperText(
+                                    "Progress bar at the top of the viewport during Livewire requests.",
+                                )
+                                ->default(true),
                         ]),
                     Tab::make("Branding")
                         ->icon("heroicon-m-photo")

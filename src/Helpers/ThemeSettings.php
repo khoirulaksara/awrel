@@ -111,6 +111,11 @@ class ThemeSettings
         return (bool) static::get('sticky_table_actions', false);
     }
 
+    public static function isLoadingBarEnabled(): bool
+    {
+        return (bool) static::get('loading_bar', true);
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Convenience Getters — Appearance
