@@ -246,7 +246,7 @@ class HookRegistrar
             function (): string {
                 $path = asset("vendor/awrel/awrel.js");
 
-                return '<script defer src="' . $path . '"></script>';
+                return '<script src="' . $path . '"></script>';
             },
         );
     }
