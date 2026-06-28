@@ -44,6 +44,11 @@ class HookRegistrar
                 $sidebarWidth = (int) ThemeSettings::sidebarWidth();
                 $primaryHex = ThemeSettings::primaryColor();
                 $logoUrl = ThemeSettings::logoUrl();
+                $loginLayout = ThemeSettings::loginLayout();
+                $loginBgColor = ThemeSettings::loginBackgroundColor();
+                $loginBgImageUrl = ThemeSettings::loginBackgroundImageUrl();
+                $isBoxed = ThemeSettings::isBoxedLayout();
+                $isSidebarRight = ThemeSettings::isSidebarRight();
 
                 // Generate all primary color shades dynamically
                 $primaryCss = '';
@@ -70,12 +75,12 @@ class HookRegistrar
                     CSS;
                 }
 
+                // ── Logo CSS ──
                 $logoStyles = '';
                 if ($logoUrl) {
                     $safeLogoUrl = e($logoUrl);
                     $logoStyles = <<<CSS
 
-                    /* Custom logo — replaces default \"Laravel\" text */
                     .fi-logo {
                         background: url({$safeLogoUrl}) no-repeat center;
                         background-size: contain;
@@ -87,11 +92,105 @@ class HookRegistrar
                     .fi-logo * {
                         visibility: hidden;
                     }
-
                     .fi-sidebar-header .fi-logo {
                         width: 100%;
                         max-width: 180px;
                         height: 2.5rem;
+                    }
+                    CSS;
+                }
+
+                // ── Login Page CSS ──
+                $loginStyles = '';
+                if (
+                    $loginLayout === 'split' ||
+                    $loginBgColor ||
+                    $loginBgImageUrl
+                ) {
+                    $loginStyles .= "\n\n/* ── Custom Login Page ── */\n";
+
+                    if ($loginBgImageUrl) {
+                        $safeBg = e($loginBgImageUrl);
+                        $loginStyles .= <<<CSS
+                        .fi-simple-layout {
+                            background-image: url({$safeBg}) !important;
+                            background-size: cover !important;
+                            background-position: center !important;
+                        }
+                        .fi-simple-layout .fi-simple-card {
+                            background: rgba(255, 255, 255, 0.9) !important;
+                            backdrop-filter: blur(12px) !important;
+                        }
+                        .dark .fi-simple-layout .fi-simple-card {
+                            background: rgba(17, 24, 39, 0.9) !important;
+                        }
+                        CSS;
+                    }
+
+                    if ($loginBgColor) {
+                        $safeColor = e($loginBgColor);
+                        $loginStyles .= <<<CSS
+                        .fi-simple-layout {
+                            background-color: {$safeColor} !important;
+                        }
+                        CSS;
+                    }
+
+                    if ($loginLayout === 'split') {
+                        $loginStyles .= <<<'CSS'
+                        .fi-simple-layout {
+                            display: flex !important;
+                        }
+                        .fi-simple-layout > * {
+                            flex: 1 !important;
+                        }
+                        .fi-simple-layout .fi-simple-card {
+                            max-width: 28rem !important;
+                            margin: auto !important;
+                        }
+                        .fi-simple-layout::before {
+                            content: '';
+                            display: block;
+                            flex: 1;
+                            background: inherit;
+                        }
+                        CSS;
+                    }
+                }
+
+                // ── Boxed Layout CSS ──
+                $boxedStyles = '';
+                if ($isBoxed) {
+                    $boxedStyles = <<<'CSS'
+
+                    /* ── Boxed Layout ── */
+                    .fi-main {
+                        max-width: 80rem !important;
+                        margin-left: auto !important;
+                        margin-right: auto !important;
+                    }
+                    .fi-main-ctn {
+                        max-width: 100%;
+                        overflow-x: hidden;
+                    }
+                    CSS;
+                }
+
+                // ── Sidebar Position CSS ──
+                $sidebarStyles = '';
+                if ($isSidebarRight) {
+                    $sidebarStyles = <<<'CSS'
+
+                    /* ── Sidebar Right ── */
+                    .fi-sidebar {
+                        order: 1 !important;
+                    }
+                    .fi-main-ctn {
+                        order: 0 !important;
+                    }
+                    .fi-layout {
+                        display: flex !important;
+                        flex-direction: row !important;
                     }
                     CSS;
                 }
@@ -105,7 +204,6 @@ class HookRegistrar
                 {$primaryCss}
                     }
 
-                    /* Apply dynamic border radius to all relevant elements */
                     .fi-section,
                     .fi-wi-stats-overview-stat,
                     .fi-ta-ctn,
@@ -120,20 +218,15 @@ class HookRegistrar
                         border-radius: var(--awrel-border-radius);
                     }
                     {$logoStyles}
+                    {$loginStyles}
+                    {$boxedStyles}
+                    {$sidebarStyles}
                 </style>
                 HTML;
             },
         );
     }
 
-    /**
-     * Inject the Awrel JavaScript bundle via a render hook.
-     *
-     * Uses a render hook instead of FilamentAsset/Vite so the JS loads
-     * reliably without requiring a Vite build step. The script is loaded
-     * with defer so it executes after DOM parsing but the Alpine component
-     * registrations handle both pre-init and post-init scenarios.
-     */
     private function registerJavascript(): void
     {
         FilamentView::registerRenderHook(
@@ -162,9 +255,6 @@ class HookRegistrar
         );
     }
 
-    /**
-     * Convert a hex color to an RGB string suitable for Tailwind color vars.
-     */
     private function hexToRgb(string $hex): string
     {
         $hex = ltrim($hex, '#');

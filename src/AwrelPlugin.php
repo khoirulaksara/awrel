@@ -52,6 +52,15 @@ class AwrelPlugin implements Plugin
     public function register(Panel $panel): void
     {
         $panel->pages([ThemeSettingsPage::class]);
+
+        // Apply horizontal navigation if enabled in settings
+        try {
+            if (ThemeSettings::isHorizontalNavigation()) {
+                $panel->topNavigation(true);
+            }
+        } catch (\Throwable) {
+            // DB not available yet (fresh install), use default sidebar layout
+        }
     }
 
     public function boot(Panel $panel): void

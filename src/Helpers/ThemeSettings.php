@@ -60,6 +60,18 @@ class ThemeSettings
     }
 
     /**
+     * Remove a single key from settings.
+     */
+    public static function forget(string $key): void
+    {
+        $record = AwrelSetting::record();
+        $current = $record->settings ?? [];
+        unset($current[$key]);
+        $record->update(['settings' => $current]);
+        static::$settings = null;
+    }
+
+    /**
      * Flush the in-memory cache (useful for testing).
      */
     public static function flush(): void
@@ -67,9 +79,17 @@ class ThemeSettings
         static::$settings = null;
     }
 
+    /**
+     * Get all defined presets from config.
+     */
+    public static function presets(): array
+    {
+        return config('awrel.presets', []);
+    }
+
     /*
     |--------------------------------------------------------------------------
-    | Convenience Getters
+    | Convenience Getters — General
     |--------------------------------------------------------------------------
     */
 
@@ -82,6 +102,12 @@ class ThemeSettings
     {
         return (bool) static::get('sticky_table_actions', false);
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Convenience Getters — Appearance
+    |--------------------------------------------------------------------------
+    */
 
     public static function primaryColor(): string
     {
@@ -98,14 +124,17 @@ class ThemeSettings
         return static::get('border_radius', '2xl');
     }
 
-    public static function sidebarWidth(): int
-    {
-        return (int) static::get('sidebar_width', 256);
-    }
+    /*
+    |--------------------------------------------------------------------------
+    | Convenience Getters — Branding
+    |--------------------------------------------------------------------------
+    */
 
     public static function logoPath(): ?string
     {
-        return static::get('logo_path');
+        $path = static::get('logo_path');
+
+        return is_string($path) && $path !== '' ? $path : null;
     }
 
     public static function logoUrl(): ?string
@@ -117,11 +146,80 @@ class ThemeSettings
         }
 
         try {
-            return Storage::disk('public')->url(
-                $path,
-            );
+            return Storage::disk('public')->url($path);
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Convenience Getters — Login Page
+    |--------------------------------------------------------------------------
+    */
+
+    public static function loginLayout(): string
+    {
+        return static::get('login_layout', 'centered');
+    }
+
+    public static function loginBackgroundColor(): ?string
+    {
+        $color = static::get('login_background_color');
+
+        return is_string($color) && $color !== '' ? $color : null;
+    }
+
+    public static function loginBackgroundImagePath(): ?string
+    {
+        $path = static::get('login_background_image');
+
+        return is_string($path) && $path !== '' ? $path : null;
+    }
+
+    public static function loginBackgroundImageUrl(): ?string
+    {
+        $path = static::loginBackgroundImagePath();
+
+        if (! $path) {
+            return null;
+        }
+
+        try {
+            return Storage::disk('public')->url($path);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Convenience Getters — Layout Variants
+    |--------------------------------------------------------------------------
+    */
+
+    public static function layoutVariant(): string
+    {
+        return static::get('layout_variant', 'sidebar');
+    }
+
+    public static function isHorizontalNavigation(): bool
+    {
+        return static::layoutVariant() === 'horizontal';
+    }
+
+    public static function isBoxedLayout(): bool
+    {
+        return (bool) static::get('boxed_layout', false);
+    }
+
+    public static function sidebarPosition(): string
+    {
+        return static::get('sidebar_position', 'left');
+    }
+
+    public static function isSidebarRight(): bool
+    {
+        return static::sidebarPosition() === 'right';
     }
 }

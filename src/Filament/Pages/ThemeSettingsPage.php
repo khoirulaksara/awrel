@@ -32,6 +32,8 @@ class ThemeSettingsPage extends Page
 
     public $logo = null;
 
+    public $loginBackgroundImage = null;
+
     public function mount(): void
     {
         $this->settings = ThemeSettings::all();
@@ -39,16 +41,43 @@ class ThemeSettingsPage extends Page
 
     public function updated($name, $value): void
     {
-        // When a setting changes, update the session cache so Alpine/JS
-        // can read revised values without a page refresh.
-        // This method is triggered by wire:model.live on the frontend.
+        // Sync CSS vars on livewire update
+    }
+
+    /**
+     * Apply a theme preset (sets multiple settings at once).
+     */
+    public function applyPreset(string $key): void
+    {
+        $presets = ThemeSettings::presets();
+
+        if (! isset($presets[$key])) {
+            return;
+        }
+
+        $preset = $presets[$key];
+
+        foreach ($preset as $field => $val) {
+            if ($field !== 'name' && $field !== 'description') {
+                $this->settings[$field] = $val;
+            }
+        }
+
+        $this->save();
     }
 
     public function save(): void
     {
+        // Handle logo upload
         if ($this->logo) {
             $path = $this->logo->store('awrel', 'public');
             $this->settings['logo_path'] = $path;
+        }
+
+        // Handle login background image upload
+        if ($this->loginBackgroundImage) {
+            $path = $this->loginBackgroundImage->store('awrel/login', 'public');
+            $this->settings['login_background_image'] = $path;
         }
 
         $validated = $this->resolveAndValidate($this->settings);
@@ -56,6 +85,7 @@ class ThemeSettingsPage extends Page
         ThemeSettings::save($validated);
 
         $this->logo = null;
+        $this->loginBackgroundImage = null;
 
         Notification::make()
             ->title('Settings saved')
@@ -77,9 +107,28 @@ class ThemeSettingsPage extends Page
         $this->settings['logo_path'] = null;
         $this->logo = null;
 
-        ThemeSettings::save($this->settings);
+        ThemeSettings::forget('logo_path');
 
         Notification::make()->title('Logo removed')->success()->send();
+    }
+
+    public function removeLoginBackground(): void
+    {
+        $path = ThemeSettings::loginBackgroundImagePath();
+
+        if ($path) {
+            Storage::disk('public')->delete($path);
+        }
+
+        $this->settings['login_background_image'] = null;
+        $this->loginBackgroundImage = null;
+
+        ThemeSettings::forget('login_background_image');
+
+        Notification::make()
+            ->title('Login background removed')
+            ->success()
+            ->send();
     }
 
     protected function resolveAndValidate(array $data): array
@@ -92,11 +141,19 @@ class ThemeSettingsPage extends Page
             'border_radius' => ['required', 'in:sm,md,lg,xl,2xl'],
             'sidebar_width' => ['required', 'integer', 'min:180', 'max:400'],
             'logo_path' => ['nullable', 'string', 'max:255'],
+            'login_layout' => ['required', 'in:centered,split'],
+            'login_background_color' => ['nullable', 'regex:/^#[a-f0-9]{6}$/i'],
+            'login_background_image' => ['nullable', 'string', 'max:255'],
+            'layout_variant' => ['required', 'in:sidebar,horizontal'],
+            'boxed_layout' => ['boolean'],
+            'sidebar_position' => ['required', 'in:left,right'],
         ];
 
-        $messages = [];
-        $attributes = [];
-
-        return validator($data, $rules, $messages, $attributes)->validate();
+        return validator(
+            $data,
+            $rules,
+            $messages ?? [],
+            $attributes ?? [],
+        )->validate();
     }
 }
