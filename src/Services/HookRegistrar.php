@@ -29,7 +29,7 @@ class HookRegistrar
     private function registerDynamicStyles(): void
     {
         FilamentView::registerRenderHook(
-            PanelsRenderHook::HEAD_START,
+            PanelsRenderHook::HEAD_END,
             function (): string {
                 $font = e(ThemeSettings::fontFamily());
                 $radius = e(ThemeSettings::borderradius());
