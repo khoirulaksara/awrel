@@ -31,7 +31,7 @@
 
 - PHP 8.2+
 - Laravel 11.x, 12.x, or 13.x
-- Filament 3.x
+- Filament 5.x
 - Livewire 4.x
 - Tailwind CSS v4
 
