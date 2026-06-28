@@ -149,11 +149,6 @@ class ThemeSettingsPage extends Page
             'sidebar_position' => ['required', 'in:left,right'],
         ];
 
-        return validator(
-            $data,
-            $rules,
-            $messages ?? [],
-            $attributes ?? [],
-        )->validate();
+        return validator($data, $rules)->validate();
     }
 }

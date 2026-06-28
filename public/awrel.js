@@ -392,6 +392,19 @@ function registerAwrelAlpineComponents() {
             );
         },
     }));
+
+    // Tabbed Settings component
+    Alpine.data("awrelSettingsTabs", () => ({
+        activeTab: "general",
+        init() {
+            var saved = localStorage.getItem("awrel_active_tab");
+            if (saved) this.activeTab = saved;
+        },
+        switchTab(tab) {
+            this.activeTab = tab;
+            localStorage.setItem("awrel_active_tab", tab);
+        },
+    }));
 }
 
 // Register components: if Alpine is already loaded, register directly;
