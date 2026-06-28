@@ -1,4 +1,10 @@
+<p align="center">
+    <img src="assets/logo-awrel.svg" alt="Awrel Logo" width="150" height="auto">
+</p>
+
 # Awrel Theme
+
+![Awrel Theme Banner](assets/awrel-banner.png)
 
 **Premium dashboard theme plugin for Filament v5** — high-end micro-interactions, skeleton loaders, glassmorphism, sticky table actions, and more. Breaks away from the mainstream Tailwind UI look with custom modern layouts and visual enhancements.
 

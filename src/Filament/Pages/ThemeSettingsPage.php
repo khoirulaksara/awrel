@@ -42,12 +42,18 @@ class ThemeSettingsPage extends Page
         $this->settings = ThemeSettings::all();
     }
 
+    public function rendering(): void
+    {
+        ThemeSettings::setOverride($this->settings);
+    }
+
     public function colorPicker(Schema $schema): Schema
     {
         return $schema
             ->components([
-                ColorPicker::make("primary_color")
+                ColorPicker::make("color")
                     ->label("Primary Color")
+                    ->statePath("settings.primary_color")
                     ->live()
                     ->afterStateUpdated(function ($state) {
                         try {
@@ -65,8 +71,7 @@ class ThemeSettingsPage extends Page
                             );
                         }
                     }),
-            ])
-            ->statePath("settings.primary_color");
+            ]);
     }
 
     public function updated($name, $value): void

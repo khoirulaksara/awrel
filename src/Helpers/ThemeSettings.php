@@ -17,6 +17,14 @@ class ThemeSettings
     private static ?array $settings = null;
 
     /**
+     * Override settings in-memory for the current request.
+     */
+    public static function setOverride(array $settings): void
+    {
+        static::$settings = array_merge(static::all(), $settings);
+    }
+
+    /**
      * Get all settings (merged DB over config defaults).
      */
     public static function all(): array

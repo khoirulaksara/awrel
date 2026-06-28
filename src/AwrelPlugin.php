@@ -53,6 +53,22 @@ class AwrelPlugin implements Plugin
     {
         $panel->pages([ThemeSettingsPage::class]);
 
+        // Apply primary color if enabled in settings
+        try {
+            $panel->colors([
+                'primary' => ThemeSettings::primaryColor(),
+            ]);
+        } catch (\Throwable) {
+            // DB not available yet (fresh install)
+        }
+
+        // Apply sidebar width if enabled in settings
+        try {
+            $panel->sidebarWidth(ThemeSettings::sidebarWidth() . 'px');
+        } catch (\Throwable) {
+            // DB not available yet (fresh install)
+        }
+
         // Apply horizontal navigation if enabled in settings
         try {
             if (ThemeSettings::isHorizontalNavigation()) {

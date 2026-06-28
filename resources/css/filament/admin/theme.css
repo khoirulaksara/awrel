@@ -106,7 +106,7 @@
 }
 
 /* Sidebar width — uses injected CSS var */
-.fi-sidebar {
+.fi-sidebar.fi-sidebar-open {
     width: var(--awrel-sidebar-width, 16rem) !important;
 }
 
@@ -120,7 +120,11 @@
    ═══════════════════════════════════════════════ */
 
 .fi-body {
-    @apply bg-gray-50 dark:bg-gray-950;
+    background-color: var(--primary-50) !important;
+}
+
+.dark .fi-body {
+    background-color: color-mix(in srgb, var(--primary-950), #09090b 70%) !important;
 }
 
 /* Card & panel */
@@ -128,6 +132,65 @@
 .fi-wi-stats-overview-stat,
 .fi-ta-ctn {
     @apply border-gray-200 bg-white shadow-xs dark:border-gray-800 dark:bg-gray-900;
+}
+
+/* --- Light Mode theme-matching containers and elements --- */
+html:not(.dark) .fi-section,
+html:not(.dark) .fi-wi-stats-overview-stat,
+html:not(.dark) .fi-ta-ctn,
+html:not(.dark) .fi-dropdown-panel,
+html:not(.dark) .fi-modal-window {
+    background-color: color-mix(in srgb, var(--primary-100), white 93%) !important;
+    border-color: color-mix(in srgb, var(--primary-200), transparent 50%) !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02), 0 1px 3px rgba(0, 0, 0, 0.01) !important;
+}
+
+/* --- Dark Mode theme-matching containers and elements --- */
+.dark .fi-section,
+.dark .fi-wi-stats-overview-stat,
+.dark .fi-ta-ctn,
+.dark .fi-dropdown-panel,
+.dark .fi-modal-window {
+    background-color: color-mix(in srgb, var(--primary-900), #111827 80%) !important;
+    border-color: color-mix(in srgb, var(--primary-800), #1f2937 60%) !important;
+}
+
+/* Light mode table header rows & search container */
+html:not(.dark) .fi-ta-header-ctn,
+html:not(.dark) .fi-ta-header-groups-row,
+html:not(.dark) .fi-ta-empty-state {
+    background-color: color-mix(in srgb, var(--primary-100), white 96%) !important;
+}
+
+/* Dark mode table header rows & search container */
+.dark .fi-ta-header-ctn,
+.dark .fi-ta-header-groups-row,
+.dark .fi-ta-empty-state {
+    background-color: color-mix(in srgb, var(--primary-950), #111827 92%) !important;
+}
+
+/* Light mode input fields & selects */
+html:not(.dark) .fi-input-wrapper {
+    background-color: color-mix(in srgb, var(--primary-100), white 96%) !important;
+    border-color: color-mix(in srgb, var(--primary-200), transparent 40%) !important;
+}
+
+/* Dark mode input fields & selects */
+.dark .fi-input-wrapper {
+    background-color: color-mix(in srgb, var(--primary-950), #111827 90%) !important;
+    border-color: color-mix(in srgb, var(--primary-800), #1f2937 60%) !important;
+}
+
+/* Light mode sidebar background matching the theme */
+html:not(.dark) .fi-sidebar {
+    background-color: color-mix(in srgb, var(--primary-100), white 90%) !important;
+    border-right-color: color-mix(in srgb, var(--primary-200), transparent 50%) !important;
+}
+
+/* Dark mode sidebar background matching the theme */
+.dark .fi-sidebar {
+    background-color: color-mix(in srgb, var(--primary-950), #111827 85%) !important;
+    border-right-color: color-mix(in srgb, var(--primary-800), #1f2937 60%) !important;
 }
 
 /* Table */
@@ -382,19 +445,156 @@ html {
     transition: color-scheme 0.3s ease;
 }
 
-/* — Glassmorphism topbar — */
-.fi-topbar {
-    background: rgba(255, 255, 255, 0.85) !important;
-    backdrop-filter: blur(12px) saturate(180%);
-    -webkit-backdrop-filter: blur(12px) saturate(180%);
-    border-bottom: 1px solid rgba(229, 231, 235, 0.8);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+/* Glassmorphism topbar — both modes */
+.fi-topbar-ctn {
+    background: transparent !important;
+    background-color: transparent !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+    overflow: visible !important; /* Override overflow-x:clip which blocks backdrop-filter */
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
 
+.fi-topbar {
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+    --tw-ring-color: transparent !important;
+}
+
+/* Light mode: fi-topbar as the semi-transparent colored layer */
+html:not(.dark) .fi-topbar {
+    background: color-mix(in srgb, var(--primary-500) 70%, transparent) !important;
+    background-color: color-mix(in srgb, var(--primary-500) 70%, transparent) !important;
+    border-bottom: 1px solid color-mix(in srgb, var(--primary-600) 30%, transparent) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+    backdrop-filter: blur(18px);
+}
+
+/* Dark mode: fi-topbar as the semi-transparent dark layer */
 .dark .fi-topbar {
-    background: rgba(17, 24, 39, 0.85) !important;
-    border-bottom: 1px solid rgba(55, 65, 81, 0.4);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    background: color-mix(in srgb, var(--primary-950) 65%, transparent) !important;
+    background-color: color-mix(in srgb, var(--primary-950) 65%, transparent) !important;
+    border-bottom: 1px solid color-mix(in srgb, var(--primary-800) 20%, transparent) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+    backdrop-filter: blur(18px);
+}
+
+/* Light mode primary-colored topbar elements */
+html:not(.dark) .fi-topbar .fi-breadcrumbs ol li,
+html:not(.dark) .fi-topbar .fi-breadcrumbs ol li a,
+html:not(.dark) .fi-topbar .fi-breadcrumbs ol li .fi-icon {
+    color: rgba(255, 255, 255, 0.95) !important;
+}
+html:not(.dark) .fi-topbar .fi-breadcrumbs ol li a:hover {
+    color: white !important;
+    text-decoration: underline !important;
+}
+
+html:not(.dark) .fi-topbar .fi-topbar-item-label,
+html:not(.dark) .fi-topbar .fi-topbar-item-icon,
+html:not(.dark) .fi-topbar .fi-topbar-group-toggle-icon {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+html:not(.dark) .fi-topbar .fi-topbar-item.fi-active .fi-topbar-item-btn {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+}
+html:not(.dark) .fi-topbar .fi-topbar-item.fi-active .fi-topbar-item-label,
+html:not(.dark) .fi-topbar .fi-topbar-item.fi-active .fi-topbar-item-icon {
+    color: white !important;
+    font-weight: 600 !important;
+}
+
+html:not(.dark) .fi-topbar .fi-topbar-item-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html:not(.dark) .fi-topbar .fi-icon-btn,
+html:not(.dark) .fi-topbar .fi-topbar-open-sidebar-btn,
+html:not(.dark) .fi-topbar .fi-topbar-close-sidebar-btn,
+html:not(.dark) .fi-topbar .fi-topbar-open-collapse-sidebar-btn,
+html:not(.dark) .fi-topbar .fi-topbar-close-collapse-sidebar-btn,
+html:not(.dark) .fi-topbar .fi-topbar-database-notifications-btn,
+html:not(.dark) .fi-theme-toggle {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+html:not(.dark) .fi-topbar .fi-icon-btn:hover,
+html:not(.dark) .fi-theme-toggle:hover {
+    color: white !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html:not(.dark) .fi-topbar .fi-logo {
+    color: white !important;
+}
+
+html:not(.dark) .fi-topbar .fi-user-menu button span {
+    color: white !important;
+}
+
+/* Position sidebar toggle button after logo */
+.fi-topbar-start {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+}
+.fi-topbar-start > a,
+.fi-topbar-start > .fi-logo {
+    order: 0 !important;
+}
+.fi-topbar-collapse-sidebar-btn-ctn {
+    order: 1 !important;
+}
+
+/* Premium Floating Sidebar Collapse Button (Desktop) */
+@media (min-width: 1024px) {
+    .fi-topbar {
+        position: relative !important;
+    }
+    /* Absolute position the collapse button only when sidebar is open */
+    .fi-main-ctn-sidebar-open .fi-topbar-collapse-sidebar-btn-ctn {
+        position: absolute !important;
+        left: 0.75rem !important; /* Shifted to the right of the sidebar border line */
+        top: 50% !important;
+        transform: translateY(-50%) !important; /* Only center vertically */
+        z-index: 20 !important;
+        margin: 0 !important;
+    }
+    
+    /* Style collapse/expand buttons as raw icons (no background, border, or shadow) */
+    .fi-topbar-collapse-sidebar-btn-ctn button {
+        background: transparent !important;
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        width: 2rem !important;
+        height: 2rem !important;
+        align-items: center !important;
+        justify-content: center !important;
+        color: rgba(255, 255, 255, 0.95) !important;
+        transition: all 0.2s ease !important;
+    }
+
+    .fi-topbar-collapse-sidebar-btn-ctn button:hover {
+        color: white !important;
+        transform: scale(1.15) !important;
+    }
+
+    .dark .fi-topbar-collapse-sidebar-btn-ctn button {
+        color: var(--color-gray-400) !important;
+    }
+
+    .dark .fi-topbar-collapse-sidebar-btn-ctn button:hover {
+        color: white !important;
+    }
+}
+
+/* Hide sidebar collapse button in top navigation mode */
+.fi-body-has-top-navigation .fi-topbar-collapse-sidebar-btn-ctn {
+    display: none !important;
 }
 
 /* Smooth scroll for container */
@@ -532,8 +732,16 @@ html {
 }
 
 .dark .awrel-sticky-actions td.fi-ta-cell:has(> .fi-ta-actions) {
-    background: var(--color-gray-900);
-    box-shadow: -8px 0 12px -4px rgba(0, 0, 0, 0.2);
+    background: var(--color-gray-900) !important;
+    box-shadow: -8px 0 12px -4px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Row hover colors for sticky cells to match other cells */
+.awrel-sticky-actions tr:hover td.fi-ta-cell:has(> .fi-ta-actions) {
+    background: var(--color-gray-50) !important;
+}
+.dark .awrel-sticky-actions tr:hover td.fi-ta-cell:has(> .fi-ta-actions) {
+    background: color-mix(in srgb, var(--color-gray-900), white 5%) !important;
 }
 
 /* ── Header cell sticky (the <th> for Actions column) ── */
@@ -541,13 +749,13 @@ html {
     position: sticky !important;
     right: 0 !important;
     z-index: 11;
-    background: var(--color-gray-50);
-    box-shadow: -8px 0 12px -4px rgba(0, 0, 0, 0.05);
+    background: var(--color-gray-50) !important;
+    box-shadow: -8px 0 12px -4px rgba(0, 0, 0, 0.05) !important;
 }
 
 .dark .awrel-sticky-actions .fi-ta-actions-header-cell {
-    background: var(--color-gray-950);
-    box-shadow: -8px 0 12px -4px rgba(0, 0, 0, 0.2);
+    background: color-mix(in srgb, var(--color-gray-900), white 5%) !important;
+    box-shadow: -8px 0 12px -4px rgba(0, 0, 0, 0.2) !important;
 }
 
 /* Remove ::before pseudo-element from actions container that may show as white block */

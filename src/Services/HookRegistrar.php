@@ -57,33 +57,33 @@ class HookRegistrar
                     foreach ($shades as $shade => $rgb) {
                         if (is_array($rgb) && count($rgb) === 3) {
                             $primaryCss .= "    --color-primary-{$shade}: {$rgb[0]} {$rgb[1]} {$rgb[2]}; \n";
-                            $primaryCss .= "    --primary-{$shade}: rgb({$rgb[0]} {$rgb[1]} {$rgb[2]}); \n";
+                            $primaryCss .= "    --primary-{$shade}: {$rgb[0]} {$rgb[1]} {$rgb[2]}; \n";
                         }
                     }
                 } catch (\Throwable) {
                     $primaryCss = <<<'CSS'
                         --color-primary-50: 255 248 240;
-                        --primary-50: rgb(255 248 240);
+                        --primary-50: 255 248 240;
                         --color-primary-100: 255 236 213;
-                        --primary-100: rgb(255 236 213);
+                        --primary-100: 255 236 213;
                         --color-primary-200: 255 219 170;
-                        --primary-200: rgb(255 219 170);
+                        --primary-200: 255 219 170;
                         --color-primary-300: 255 204 128;
-                        --primary-300: rgb(255 204 128);
+                        --primary-300: 255 204 128;
                         --color-primary-400: 255 187 85;
-                        --primary-400: rgb(255 187 85);
+                        --primary-400: 255 187 85;
                         --color-primary-500: 255 171 43;
-                        --primary-500: rgb(255 171 43);
+                        --primary-500: 255 171 43;
                         --color-primary-600: 204 136 34;
-                        --primary-600: rgb(204 136 34);
+                        --primary-600: 204 136 34;
                         --color-primary-700: 153 102 25;
-                        --primary-700: rgb(153 102 25);
+                        --primary-700: 153 102 25;
                         --color-primary-800: 102 68 17;
-                        --primary-800: rgb(102 68 17);
+                        --primary-800: 102 68 17;
                         --color-primary-900: 51 34 8;
-                        --primary-900: rgb(51 34 8);
+                        --primary-900: 51 34 8;
                         --color-primary-950: 26 17 4;
-                        --primary-950: rgb(26 17 4);
+                        --primary-950: 26 17 4;
                     CSS;
                 }
 
@@ -94,20 +94,33 @@ class HookRegistrar
                     $logoStyles = <<<CSS
 
                     .fi-logo {
-                        background: url({$safeLogoUrl}) no-repeat center;
-                        background-size: contain;
+                        background: url({$safeLogoUrl}) no-repeat center !important;
+                        background-size: contain !important;
                         color: transparent !important;
-                        overflow: hidden;
-                        width: 130px;
-                        height: 2rem;
+                        text-indent: -9999px !important;
+                        overflow: hidden !important;
+                        width: 130px !important;
+                        height: 2rem !important;
                     }
                     .fi-logo * {
-                        visibility: hidden;
+                        display: none !important;
+                        visibility: hidden !important;
                     }
                     .fi-sidebar-header .fi-logo {
-                        width: 100%;
-                        max-width: 180px;
-                        height: 2.5rem;
+                        width: 100% !important;
+                        max-width: 180px !important;
+                        height: 2.5rem !important;
+                    }
+                    
+                    /* Auto-mask topbar logo to white in both light and dark modes */
+                    .fi-topbar .fi-logo {
+                        -webkit-mask: url({$safeLogoUrl}) no-repeat center !important;
+                        mask: url({$safeLogoUrl}) no-repeat center !important;
+                        -webkit-mask-size: contain !important;
+                        mask-size: contain !important;
+                        background-image: none !important;
+                        background: white !important;
+                        background-color: white !important;
                     }
                     CSS;
                 }
@@ -129,11 +142,11 @@ class HookRegistrar
                             background-size: cover !important;
                             background-position: center !important;
                         }
-                        .fi-simple-layout .fi-simple-card {
+                        .fi-simple-layout .fi-simple-main {
                             background: rgba(255, 255, 255, 0.9) !important;
                             backdrop-filter: blur(12px) !important;
                         }
-                        .dark .fi-simple-layout .fi-simple-card {
+                        .dark .fi-simple-layout .fi-simple-main {
                             background: rgba(17, 24, 39, 0.9) !important;
                         }
                         CSS;
@@ -150,21 +163,45 @@ class HookRegistrar
 
                     if ($loginLayout === "split") {
                         $loginStyles .= <<<'CSS'
-                        .fi-simple-layout {
-                            display: flex !important;
-                        }
-                        .fi-simple-layout > * {
-                            flex: 1 !important;
-                        }
-                        .fi-simple-layout .fi-simple-card {
-                            max-width: 28rem !important;
-                            margin: auto !important;
-                        }
-                        .fi-simple-layout::before {
-                            content: '';
-                            display: block;
-                            flex: 1;
-                            background: inherit;
+                        @media (min-width: 1024px) {
+                            .fi-simple-layout {
+                                flex-direction: row !important;
+                                align-items: stretch !important;
+                                min-height: 100vh !important;
+                            }
+                            .fi-simple-layout::before {
+                                content: '' !important;
+                                display: block !important;
+                                flex: 1.2 !important;
+                                background-image: inherit !important;
+                                background-color: inherit !important;
+                                background-size: cover !important;
+                                background-position: center !important;
+                                border-right: 1px solid rgba(229, 231, 235, 0.8) !important;
+                            }
+                            .dark .fi-simple-layout::before {
+                                border-right-color: rgba(55, 65, 81, 0.4) !important;
+                            }
+                            .fi-simple-main-ctn {
+                                flex: 1 !important;
+                                background: white !important;
+                                display: flex !important;
+                                align-items: center !important;
+                                justify-content: center !important;
+                                padding: 2rem !important;
+                            }
+                            .dark .fi-simple-main-ctn {
+                                background: var(--color-gray-950) !important;
+                            }
+                            .fi-simple-main {
+                                max-width: 28rem !important;
+                                width: 100% !important;
+                                box-shadow: none !important;
+                                ring: 0 !important;
+                                border: none !important;
+                                background: transparent !important;
+                                margin: 0 !important;
+                            }
                         }
                         CSS;
                     }
@@ -194,8 +231,20 @@ class HookRegistrar
                     $sidebarStyles = <<<'CSS'
 
                     /* ── Sidebar Right ── */
-                    .fi-sidebar {
+                    .fi-layout > *:has(.fi-sidebar) {
                         order: 1 !important;
+                    }
+                    .fi-sidebar {
+                        left: auto !important;
+                        right: 0 !important;
+                    }
+                    .fi-sidebar.fi-sidebar-open {
+                        border-left: 1px solid var(--color-gray-200) !important;
+                        border-right: none !important;
+                    }
+                    .dark .fi-sidebar.fi-sidebar-open {
+                        border-left-color: var(--color-gray-800) !important;
+                        border-right: none !important;
                     }
                     .fi-main-ctn {
                         order: 0 !important;
@@ -203,6 +252,15 @@ class HookRegistrar
                     .fi-layout {
                         display: flex !important;
                         flex-direction: row !important;
+                    }
+                    
+                    /* Move floating collapse button to the right side border when open */
+                    @media (min-width: 1024px) {
+                        .fi-main-ctn-sidebar-open .fi-topbar-collapse-sidebar-btn-ctn {
+                            left: auto !important;
+                            right: 0.75rem !important;
+                            transform: translateY(-50%) !important;
+                        }
                     }
                     CSS;
                 }
@@ -246,7 +304,7 @@ class HookRegistrar
             function (): string {
                 $path = asset("vendor/awrel/awrel.js");
 
-                return '<script src="' . $path . '"></script>';
+                return '<script src="' . $path . '" defer></script>';
             },
         );
     }
