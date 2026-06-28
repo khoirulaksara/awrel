@@ -1,0 +1,1 @@
+function a(){return{activeTab:"general",init(){let t=localStorage.getItem("awrel_active_tab");t&&(this.activeTab=t)},switchTab(t){this.activeTab=t,localStorage.setItem("awrel_active_tab",t)}}}export{a as default};

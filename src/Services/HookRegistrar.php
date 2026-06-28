@@ -15,7 +15,6 @@ class HookRegistrar
     public function registerHooks(): void
     {
         $this->registerDynamicStyles();
-        $this->registerJavascript();
 
         if ($this->awrelPlugin->isFaviconSpinnerEnabled()) {
             $this->registerFaviconSpinner();
@@ -111,7 +110,7 @@ class HookRegistrar
                         max-width: 180px !important;
                         height: 2.5rem !important;
                     }
-                    
+
                     /* Auto-mask topbar logo to white in both light and dark modes */
                     .fi-topbar .fi-logo {
                         -webkit-mask: url({$safeLogoUrl}) no-repeat center !important;
@@ -253,7 +252,7 @@ class HookRegistrar
                         display: flex !important;
                         flex-direction: row !important;
                     }
-                    
+
                     /* Move floating collapse button to the right side border when open */
                     @media (min-width: 1024px) {
                         .fi-main-ctn-sidebar-open .fi-topbar-collapse-sidebar-btn-ctn {
@@ -293,18 +292,6 @@ class HookRegistrar
                     {$sidebarStyles}
                 </style>
                 HTML;
-            },
-        );
-    }
-
-    private function registerJavascript(): void
-    {
-        FilamentView::registerRenderHook(
-            PanelsRenderHook::HEAD_START,
-            function (): string {
-                $path = asset("vendor/awrel/awrel.js");
-
-                return '<script src="' . $path . '" defer></script>';
             },
         );
     }

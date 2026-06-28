@@ -2,185 +2,259 @@
 
 namespace Khoirulaksara\Awrel\Filament\Pages;
 
-use BackedEnum;
 use Filament\Forms\Components\ColorPicker;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Radio;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
 use Filament\Support\Colors\Color;
-use Illuminate\Support\Facades\Storage;
 use Khoirulaksara\Awrel\Helpers\ThemeSettings;
-use Livewire\WithFileUploads;
-use UnitEnum;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Filament\Actions\Action; // Added this
 
-class ThemeSettingsPage extends Page
+class ThemeSettingsPage extends Page implements HasForms
 {
-    use WithFileUploads;
+    use InteractsWithForms;
+
+    protected string $view = "awrel::filament.pages.theme-settings-page";
 
     protected static ?string $title = "Awrel Theme Settings";
 
     protected ?string $heading = "Awrel Theme Settings";
 
-    protected static ?string $navigationLabel = "Awrel Theme Settings";
+    public ?array $data = [];
 
-    protected static string|BackedEnum|null $navigationIcon = "heroicon-o-swatch";
+    public static function getNavigationIcon(): ?string
+    {
+        return "heroicon-o-adjustments-horizontal";
+    }
 
-    protected static string|UnitEnum|null $navigationGroup = "Settings";
+    public static function getNavigationGroup(): ?string
+    {
+        return "Settings";
+    }
 
-    protected static ?int $navigationSort = 1;
-
-    protected string $view = "awrel::filament.pages.theme-settings";
-
-    public array $settings = [];
-
-    public $logo = null;
-
-    public $loginBackgroundImage = null;
+    public static function getNavigationSort(): ?int
+    {
+        return 10;
+    }
 
     public function mount(): void
     {
-        $this->settings = ThemeSettings::all();
+        $this->form->fill(ThemeSettings::all());
     }
 
-    public function rendering(): void
+    public function form(Schema $schema): Schema
     {
-        ThemeSettings::setOverride($this->settings);
-    }
-
-    public function colorPicker(Schema $schema): Schema
-    {
-        return $schema
-            ->components([
-                ColorPicker::make("color")
-                    ->label("Primary Color")
-                    ->statePath("settings.primary_color")
-                    ->live()
-                    ->afterStateUpdated(function ($state) {
-                        try {
-                            $shades = Color::hex($state);
-                            $this->dispatch(
-                                "awrel-color-synced",
-                                color: $state,
-                                shades: $shades,
-                            );
-                        } catch (\Throwable) {
-                            $this->dispatch(
-                                "awrel-color-synced",
-                                color: $state,
-                                shades: [],
-                            );
-                        }
-                    }),
-            ]);
-    }
-
-    public function updated($name, $value): void
-    {
-        if (str_starts_with($name, "settings.")) {
-            $key = (string) str($name)->after("settings.");
-            if ($key === "primary_color") {
-                // Generate proper RGB shades using Filament's color engine
-                try {
-                    $shades = Color::hex($value);
-                    $this->dispatch(
-                        "awrel-color-synced",
-                        color: $value,
-                        shades: $shades,
-                    );
-                } catch (\Throwable) {
-                    $this->dispatch(
-                        "awrel-color-synced",
-                        color: $value,
-                        shades: [],
-                    );
-                }
-            }
-        }
+        return $schema->statePath("data")->schema([
+            Tabs::make("Theme Settings")
+                ->tabs([
+                    Tab::make("General")
+                        ->icon("heroicon-m-cog-6-tooth")
+                        ->schema([
+                            Toggle::make("favicon_spinner")
+                                ->label("Animated Favicon Spinner")
+                                ->helperText(
+                                    "Spinner in browser tab on navigation",
+                                ),
+                            Toggle::make("sticky_table_actions")
+                                ->label("Sticky Table Actions")
+                                ->helperText(
+                                    "Pin actions column on table horizontal scroll",
+                                ),
+                        ]),
+                    Tab::make("Branding")
+                        ->icon("heroicon-m-photo")
+                        ->schema([
+                            FileUpload::make("logo_path")
+                                ->label("Logo")
+                                ->directory("awrel")
+                                ->disk("public")
+                                ->image()
+                                ->maxSize(1024)
+                                ->helperText(
+                                    "Upload your own logo to replace the default brand text.",
+                                )
+                                ->preserveFilenames()
+                                ->panelLayout("integrated")
+                                ->columnSpanFull(),
+                        ]),
+                    Tab::make("Appearance")
+                        ->icon("heroicon-m-paint-brush")
+                        ->schema([
+                            ColorPicker::make("primary_color")
+                                ->label("Primary Color")
+                                ->hex()
+                                ->live()
+                                ->helperText(
+                                    "The main accent color used across the admin panel.",
+                                )
+                                ->afterStateUpdated(function ($state) {
+                                    try {
+                                        $shades = Color::hex($state);
+                                        $this->dispatch(
+                                            "awrel-color-synced",
+                                            color: $state,
+                                            shades: $shades,
+                                        );
+                                    } catch (\Throwable $th) {
+                                        $this->dispatch(
+                                            "awrel-color-synced",
+                                            color: $state,
+                                            shades: [],
+                                        );
+                                    }
+                                }),
+                            Select::make("font_family")
+                                ->label("Font Family")
+                                ->options([
+                                    "Plus Jakarta Sans" => "Plus Jakarta Sans",
+                                    "Inter" => "Inter",
+                                    "Instrument Sans" => "Instrument Sans",
+                                    "system-ui" => "system-ui",
+                                ])
+                                ->native(false)
+                                ->helperText(
+                                    "Base font for the admin panel interface.",
+                                ),
+                            Radio::make("border_radius")
+                                ->label("Border Radius")
+                                ->options([
+                                    "sm" => "sm",
+                                    "md" => "md",
+                                    "lg" => "lg",
+                                    "xl" => "xl",
+                                    "2xl" => "2xl",
+                                ])
+                                ->descriptions([
+                                    "sm" => "0.375rem",
+                                    "md" => "0.5rem",
+                                    "lg" => "0.75rem",
+                                    "xl" => "1rem",
+                                    "2xl" => "1.25rem",
+                                ])
+                                ->inline(false)
+                                ->default("2xl")
+                                ->helperText(
+                                    "Controls the rounding of cards, buttons, and panels.",
+                                ),
+                        ]),
+                    Tab::make("Login")
+                        ->icon("heroicon-m-lock-closed")
+                        ->schema([
+                            Radio::make("login_layout")
+                                ->label("Login Page Layout")
+                                ->options([
+                                    "centered" => "Centered",
+                                    "split" => "Split",
+                                ])
+                                ->inline(false)
+                                ->default("centered")
+                                ->helperText(
+                                    "Choose between a centered or split layout for the login page.",
+                                ),
+                            ColorPicker::make("login_background_color")
+                                ->label("Login Background Color")
+                                ->hex()
+                                ->nullable()
+                                ->helperText(
+                                    "Set a background color for the login page.",
+                                ),
+                            FileUpload::make("login_background_image")
+                                ->label("Login Background Image")
+                                ->directory("awrel/login")
+                                ->disk("public")
+                                ->image()
+                                ->maxSize(2048)
+                                ->helperText(
+                                    "Upload a background image for the login page.",
+                                )
+                                ->preserveFilenames()
+                                ->panelLayout("integrated")
+                                ->columnSpanFull(),
+                        ]),
+                    Tab::make("Layout")
+                        ->icon("heroicon-m-view-columns")
+                        ->schema([
+                            Radio::make("layout_variant")
+                                ->label("Layout Variant")
+                                ->options([
+                                    "sidebar" => "Sidebar",
+                                    "horizontal" => "Horizontal",
+                                ])
+                                ->inline(false)
+                                ->default("sidebar")
+                                ->helperText(
+                                    "Choose between a sidebar or horizontal navigation layout.",
+                                ),
+                            Toggle::make("boxed_layout")
+                                ->label("Boxed Layout")
+                                ->helperText(
+                                    "Apply a boxed layout to the main content area.",
+                                ),
+                            Radio::make("sidebar_position")
+                                ->label("Sidebar Position")
+                                ->options([
+                                    "left" => "Left",
+                                    "right" => "Right",
+                                ])
+                                ->inline(false)
+                                ->default("left")
+                                ->helperText(
+                                    "Set the position of the sidebar (left or right).",
+                                ),
+                            TextInput::make("sidebar_width")
+                                ->label("Sidebar Width")
+                                ->numeric()
+                                ->suffix("px")
+                                ->minValue(180)
+                                ->maxValue(400)
+                                ->default(256)
+                                ->helperText(
+                                    "Adjust the sidebar width (180px — 400px).",
+                                ),
+                        ]),
+                ])
+                ->columnSpanFull(),
+        ]);
     }
 
     public function save(): void
     {
-        // Handle logo upload
-        if ($this->logo) {
-            $path = $this->logo->store("awrel", "public");
-            $this->settings["logo_path"] = $path;
-        }
+        $data = $this->form->getState();
 
-        // Handle login background image upload
-        if ($this->loginBackgroundImage) {
-            $path = $this->loginBackgroundImage->store("awrel/login", "public");
-            $this->settings["login_background_image"] = $path;
-        }
-
-        $validated = $this->resolveAndValidate($this->settings);
-
-        ThemeSettings::save($validated);
-
-        $this->logo = null;
-        $this->loginBackgroundImage = null;
+        ThemeSettings::save($data);
 
         Notification::make()
-            ->title("Settings saved")
-            ->body(
-                "Theme settings have been updated. Refreshing the page to apply all changes.",
-            )
+            ->title("Settings saved successfully.")
             ->success()
             ->send();
     }
 
-    public function removeLogo(): void
+    protected function getFormActions(): array
     {
-        $path = ThemeSettings::logoPath();
-
-        if ($path) {
-            Storage::disk("public")->delete($path);
-        }
-
-        $this->settings["logo_path"] = null;
-        $this->logo = null;
-
-        ThemeSettings::forget("logo_path");
-
-        Notification::make()->title("Logo removed")->success()->send();
-    }
-
-    public function removeLoginBackground(): void
-    {
-        $path = ThemeSettings::loginBackgroundImagePath();
-
-        if ($path) {
-            Storage::disk("public")->delete($path);
-        }
-
-        $this->settings["login_background_image"] = null;
-        $this->loginBackgroundImage = null;
-
-        ThemeSettings::forget("login_background_image");
-
-        Notification::make()
-            ->title("Login background removed")
-            ->success()
-            ->send();
-    }
-
-    protected function resolveAndValidate(array $data): array
-    {
-        $rules = [
-            "favicon_spinner" => ["boolean"],
-            "sticky_table_actions" => ["boolean"],
-            "primary_color" => ["required", 'regex:/^#[a-f0-9]{6}$/i'],
-            "font_family" => ["required", "string", "max:100"],
-            "border_radius" => ["required", "in:sm,md,lg,xl,2xl"],
-            "sidebar_width" => ["required", "integer", "min:180", "max:400"],
-            "logo_path" => ["nullable", "string", "max:255"],
-            "login_layout" => ["required", "in:centered,split"],
-            "login_background_color" => ["nullable", 'regex:/^#[a-f0-9]{6}$/i'],
-            "login_background_image" => ["nullable", "string", "max:255"],
-            "layout_variant" => ["required", "in:sidebar,horizontal"],
-            "boxed_layout" => ["boolean"],
-            "sidebar_position" => ["required", "in:left,right"],
+        return [
+            Action::make("save")
+                ->label(
+                    __(
+                        "filament-panels::resources/pages/edit-record.form.actions.save.label",
+                    ),
+                )
+                ->submit("save")
+                ->keyBindings(["mod+s"]),
         ];
+    }
 
-        return validator($data, $rules)->validate();
+    public function content(Schema $schema): Schema
+    {
+        return $this->form($schema);
     }
 }

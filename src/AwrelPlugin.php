@@ -4,9 +4,12 @@ namespace Khoirulaksara\Awrel;
 
 use Filament\Contracts\Plugin;
 use Filament\Panel;
+use Filament\Support\Colors\Color;
+use Filament\Support\Icons\Heroicon;
 use Khoirulaksara\Awrel\Filament\Pages\ThemeSettingsPage;
 use Khoirulaksara\Awrel\Helpers\ThemeSettings;
 use Khoirulaksara\Awrel\Services\HookRegistrar;
+use UnitEnum; // For navigationGroup type hint
 
 class AwrelPlugin implements Plugin
 {
@@ -20,7 +23,7 @@ class AwrelPlugin implements Plugin
 
     public function getId(): string
     {
-        return 'awrel-theme';
+        return "awrel-theme";
     }
 
     public function faviconSpinner(bool $condition = true): static
@@ -53,29 +56,33 @@ class AwrelPlugin implements Plugin
     {
         $panel->pages([ThemeSettingsPage::class]);
 
-        // Apply primary color if enabled in settings
+        // Apply primary color from DB settings
         try {
-            $panel->colors([
-                'primary' => ThemeSettings::primaryColor(),
-            ]);
+            $primaryColor = ThemeSettings::primaryColor();
+            if ($primaryColor) {
+                $panel->colors([
+                    "primary" => Color::hex($primaryColor),
+                ]);
+            }
         } catch (\Throwable) {
             // DB not available yet (fresh install)
         }
 
-        // Apply sidebar width if enabled in settings
+        // Apply sidebar width from DB settings
         try {
-            $panel->sidebarWidth(ThemeSettings::sidebarWidth() . 'px');
+            $sidebarWidth = ThemeSettings::sidebarWidth();
+            $panel->sidebarWidth($sidebarWidth . "px");
         } catch (\Throwable) {
             // DB not available yet (fresh install)
         }
 
-        // Apply horizontal navigation if enabled in settings
+        // Apply horizontal navigation from DB settings
         try {
             if (ThemeSettings::isHorizontalNavigation()) {
                 $panel->topNavigation(true);
             }
         } catch (\Throwable) {
-            // DB not available yet (fresh install), use default sidebar layout
+            // DB not available yet (fresh install)
         }
     }
 
