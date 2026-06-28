@@ -44,28 +44,6 @@ class ThemeSettingsPage extends Page
         // Sync CSS vars on livewire update
     }
 
-    /**
-     * Apply a theme preset (sets multiple settings at once).
-     */
-    public function applyPreset(string $key): void
-    {
-        $presets = ThemeSettings::presets();
-
-        if (! isset($presets[$key])) {
-            return;
-        }
-
-        $preset = $presets[$key];
-
-        foreach ($preset as $field => $val) {
-            if ($field !== 'name' && $field !== 'description') {
-                $this->settings[$field] = $val;
-            }
-        }
-
-        $this->save();
-    }
-
     public function save(): void
     {
         // Handle logo upload

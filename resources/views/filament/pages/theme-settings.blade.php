@@ -23,12 +23,6 @@
                     <x-heroicon-m-photo class="h-4 w-4" />
                     <span class="hidden sm:inline">Branding</span>
                 </button>
-                <button type="button" role="tab" x-on:click="switchTab('presets')"
-                    :class="activeTab === 'presets' ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:hover:border-gray-600 dark:hover:text-gray-300'"
-                    class="flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-all duration-150 whitespace-nowrap">
-                    <x-heroicon-m-swatch class="h-4 w-4" />
-                    <span class="hidden sm:inline">Presets</span>
-                </button>
                 <button type="button" role="tab" x-on:click="switchTab('appearance')"
                     :class="activeTab === 'appearance' ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:hover:border-gray-600 dark:hover:text-gray-300'"
                     class="flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-all duration-150 whitespace-nowrap">
@@ -139,46 +133,7 @@
         </div>
 
         {{-- ================================================================ --}}
-        {{--  3. Theme Presets Tab                                             --}}
-        {{-- ================================================================ --}}
-        <div x-show="activeTab === 'presets'" x-transition:enter.duration.200ms.opacity class="space-y-6">
-            <div class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700/50 dark:bg-gray-900">
-                <div class="border-b border-gray-100 px-6 py-4 dark:border-gray-800">
-                    <div class="flex items-center gap-3">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-600 dark:bg-primary-900/50 dark:text-primary-400">
-                            <x-heroicon-m-swatch class="h-4 w-4" />
-                        </span>
-                        <div>
-                            <h2 class="text-base font-semibold text-gray-900 dark:text-white">Theme Presets</h2>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Quickly apply a pre-configured theme</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="px-6 py-5">
-                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        @foreach (config('awrel.presets', []) as $key => $preset)
-                            <button type="button" wire:click="applyPreset('{{ $key }}')"
-                                class="group relative flex flex-col items-start rounded-xl border-2 p-5 text-left transition-all duration-150 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                :class="$wire.settings.primary_color === '{{ $preset['primary_color'] }}' ? 'border-primary-500 bg-primary-50 dark:border-primary-500 dark:bg-primary-900/20' : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'">
-                                <div class="mb-3 flex items-center gap-2">
-                                    <span class="inline-block h-5 w-5 rounded-full border-2 border-white shadow-sm dark:border-gray-700" style="background-color: {{ $preset['primary_color'] }}"></span>
-                                    <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ $preset['name'] }}</span>
-                                </div>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">{{ $preset['description'] }}</p>
-                                <div class="mt-2 flex flex-wrap gap-1.5 text-[10px] font-medium text-gray-400 dark:text-gray-500">
-                                    <span>{{ $preset['font_family'] }}</span>
-                                    <span>&middot;</span>
-                                    <span>rounded-{{ $preset['border_radius'] }}</span>
-                                </div>
-                            </button>
-                        @endforeach
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {{-- ================================================================ --}}
-        {{--  4. Appearance Tab                                               --}}
+        {{--  3. Appearance Tab                                               --}}
         {{-- ================================================================ --}}
         <div x-show="activeTab === 'appearance'" x-transition:enter.duration.200ms.opacity class="space-y-6">
             <div class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700/50 dark:bg-gray-900">
