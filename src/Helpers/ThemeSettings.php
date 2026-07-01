@@ -2,6 +2,7 @@
 
 namespace Khoirulaksara\Awrel\Helpers;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Khoirulaksara\Awrel\Models\AwrelSetting;
 
@@ -34,16 +35,19 @@ class ThemeSettings
         }
 
         $defaults = config('awrel', []);
-        $db = [];
 
-        try {
-            $record = AwrelSetting::record();
-            $db = $record->settings ?? [];
-        } catch (\Throwable) {
-            // Table may not exist yet (fresh install, first migration)
-        }
+        return static::$settings = Cache::remember('awrel_settings', 300, function () use ($defaults) {
+            $db = [];
 
-        return static::$settings = array_merge($defaults, $db);
+            try {
+                $record = AwrelSetting::record();
+                $db = $record->settings ?? [];
+            } catch (\Throwable) {
+                // Table may not exist yet (fresh install, first migration)
+            }
+
+            return array_merge($defaults, $db);
+        });
     }
 
     /**
@@ -114,6 +118,21 @@ class ThemeSettings
     public static function isLoadingBarEnabled(): bool
     {
         return (bool) static::get('loading_bar', true);
+    }
+
+    public static function isPageTransitionEnabled(): bool
+    {
+        return (bool) static::get('page_transition', true);
+    }
+
+    public static function isButtonSubmitLoadingEnabled(): bool
+    {
+        return (bool) static::get('button_submit_loading', true);
+    }
+
+    public static function isUnsavedChangesGuardEnabled(): bool
+    {
+        return (bool) static::get('unsaved_changes_guard', true);
     }
 
     /*

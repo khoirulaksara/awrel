@@ -16,7 +16,7 @@ async function build(options) {
 
 const baseOptions = {
     bundle: true,
-    format: 'esm',
+    format: 'iife',
     target: ['es2020'],
     sourcemap: isDev ? 'inline' : false,
     minify: !isDev,

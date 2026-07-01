@@ -316,6 +316,15 @@ html:not(.dark) .fi-sidebar {
 }
 
 /* — Utilities — */
+@keyframes awrel-fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes awrel-spin {
+    to { transform: rotate(360deg); }
+}
+
 @utility duration-350 {
     transition-duration: 350ms;
 }
@@ -680,10 +689,37 @@ html:not(.dark) .fi-topbar .fi-user-menu button span {
 }
 
 /* ═══════════════════════════════════════════════
-   11. STICKY TABLE ACTIONS (opt-in via ->stickyTableActions())
+   11. ACCESSIBILITY — REDUCED MOTION
    ═══════════════════════════════════════════════ */
 
-/* Enable horizontal scroll on table wrapper */
+/*
+ * When the user's OS/browser requests reduced motion, disable ALL decorative
+ * animations.  This covers: skeleton shimmer, shake, bell ring, stat-card
+ * hover lift, sidebar transition, chevron rotation, smooth scroll, and any
+ * future CSS animations added to the theme.
+ */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .awrel-skeleton-bar,
+    .awrel-skeleton-card-icon,
+    .awrel-skeleton-card-value,
+    .awrel-skeleton-card-label {
+        opacity: 0.5 !important;
+        animation: none !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════
+   12. STICKY TABLE ACTIONS (opt-in via ->stickyTableActions())
+   ═══════════════════════════════════════════════ */
 .awrel-sticky-actions .fi-ta-content-ctn {
     overflow-x: auto;
     scrollbar-width: thin;
@@ -744,6 +780,30 @@ html:not(.dark) .fi-topbar .fi-user-menu button span {
     background: color-mix(in srgb, var(--color-gray-900), white 5%) !important;
 }
 
+
+
+/* ═══════════════════════════════════════════════
+   13. STICKY TABLE HEADER (always-on for opt-in sticky actions)
+   ═══════════════════════════════════════════════ */
+
+.awrel-sticky-actions .fi-ta-content-ctn thead {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 9;
+}
+
+/* Ensure the header row stays above body cells */
+.awrel-sticky-actions .fi-ta-content-ctn thead th {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 9;
+    background: var(--color-gray-50) !important;
+}
+
+.dark .awrel-sticky-actions .fi-ta-content-ctn thead th {
+    background: var(--color-gray-900) !important;
+}
+
 /* ── Header cell sticky (the <th> for Actions column) ── */
 .awrel-sticky-actions .fi-ta-actions-header-cell {
     position: sticky !important;
@@ -770,4 +830,68 @@ html:not(.dark) .fi-topbar .fi-user-menu button span {
 /* Ensure the actions container doesn't have extra background */
 .fi-ta-actions {
     background: transparent !important;
+}
+
+
+/* 14. IMAGE SKELETON */
+img.awrel-img-skeleton {
+    display: inline-block; min-width: 32px; min-height: 32px;
+    background: rgb(229 231 235);
+    animation: awrel-pulse 1.5s ease-in-out infinite;
+    border-radius: 0.25rem;
+    object-fit: cover;
+}
+.dark img.awrel-img-skeleton { background: rgb(55 65 81); }
+
+
+/* 15. OFFLINE BANNER */
+.awrel-offline-banner {
+    position:fixed;bottom:0;left:0;right:0;z-index:2147483646;
+    padding:0.5rem 1rem;text-align:center;font-size:.875rem;font-weight:600;
+    background:#fef3c7;color:#92400e;border-top:2px solid #f59e0b;
+    transform:translateY(100%);transition:transform .3s ease;
+}
+.awrel-offline-banner.is-visible{transform:translateY(0)}
+.dark .awrel-offline-banner{background:#451a03;color:#fbbf24;border-top-color:#d97706}
+
+
+/* 16. SCROLL-TO-TOP */
+.awrel-scroll-top {
+    position:fixed;bottom:1.5rem;right:1.5rem;z-index:2147483645;
+    width:2.5rem;height:2.5rem;border-radius:9999px;
+    background:color-mix(in srgb,var(--color-primary-500),transparent 30%);color:white;
+    border:none;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.15);
+    opacity:0;visibility:hidden;transform:translateY(.75rem);
+    transition:opacity .25s,transform .25s,visibility .25s;
+    display:flex;align-items:center;justify-content:center;
+}
+.awrel-scroll-top.is-visible{opacity:1;visibility:visible;transform:translateY(0)}
+.awrel-scroll-top:hover{background:var(--color-primary-500);transform:translateY(-2px)}
+.dark .awrel-scroll-top{background:color-mix(in srgb,var(--color-primary-600),transparent 20%)}
+.dark .awrel-scroll-top:hover{background:var(--color-primary-600)}
+
+
+/* 17. TOAST COUNTDOWN */
+.awrel-toast-bar{height:3px;border-radius:0 0 .5rem .5rem;background:var(--color-primary-500);animation:awrel-toast-cd 5s linear forwards;margin-top:.25rem}
+.dark .awrel-toast-bar{background:var(--color-primary-600)}
+@keyframes awrel-toast-cd{from{width:100%}to{width:0%}}
+
+
+/* 18. AUTOSAVE INDICATOR */
+.awrel-autosave-label{
+    position:fixed;bottom:.75rem;left:50%;transform:translateX(-50%);z-index:2147483644;
+    padding:.25rem .75rem;font-size:.75rem;font-weight:500;border-radius:.375rem;
+    background:rgba(107,114,128,.9);color:white;opacity:0;transition:opacity .2s;pointer-events:none
+}
+.awrel-autosave-label.is-visible{opacity:1}
+.dark .awrel-autosave-label{background:rgba(156,163,175,.85);color:#111827}
+/* ═══════════════════════════════════════════════
+   19. PERFORMANCE — content-visibility
+   Only render tables and stat widgets when they are near the viewport.
+   ═══════════════════════════════════════════════ */
+
+.fi-ta-ctn,
+.fi-wi-stats-overview {
+    content-visibility: auto;
+    contain-intrinsic-size: 400px;
 }

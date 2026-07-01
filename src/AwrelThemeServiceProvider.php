@@ -11,9 +11,9 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 class AwrelThemeServiceProvider extends PackageServiceProvider
 {
-    public static string $name = "awrel";
+    public static string $name = 'awrel';
 
-    public static string $viewNamespace = "awrel";
+    public static string $viewNamespace = 'awrel';
 
     public function configurePackage(Package $package): void
     {
@@ -32,8 +32,6 @@ class AwrelThemeServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
-        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
-
         FilamentAsset::register(
             $this->getAssets(),
             $this->getAssetPackageName(),
@@ -42,7 +40,7 @@ class AwrelThemeServiceProvider extends PackageServiceProvider
 
     protected function getAssetPackageName(): ?string
     {
-        return "khoirulaksara/awrel";
+        return 'khoirulaksara/awrel';
     }
 
     /**
@@ -52,24 +50,24 @@ class AwrelThemeServiceProvider extends PackageServiceProvider
     {
         return [
             Js::make(
-                "awrel-scripts",
-                __DIR__ . "/../resources/js/dist/index.js",
+                'awrel-scripts',
+                __DIR__.'/../resources/js/dist/index.js',
             ),
             AlpineComponent::make(
-                "awrel-color-picker",
-                __DIR__ . "/../resources/js/dist/components/color-picker.js",
+                'awrel-color-picker',
+                __DIR__.'/../resources/js/dist/components/color-picker.js',
             ),
             AlpineComponent::make(
-                "awrel-range-slider",
-                __DIR__ . "/../resources/js/dist/components/range-slider.js",
+                'awrel-range-slider',
+                __DIR__.'/../resources/js/dist/components/range-slider.js',
             ),
             AlpineComponent::make(
-                "awrel-settings-tabs",
-                __DIR__ . "/../resources/js/dist/components/settings-tabs.js",
+                'awrel-settings-tabs',
+                __DIR__.'/../resources/js/dist/components/settings-tabs.js',
             ),
             Css::make(
-                "awrel-styles",
-                __DIR__ . "/../resources/css/filament/admin/theme.css",
+                'awrel-styles',
+                __DIR__.'/../resources/css/filament/admin/theme.css',
             ),
         ];
     }
@@ -90,6 +88,6 @@ class AwrelThemeServiceProvider extends PackageServiceProvider
      */
     protected function getMigrations(): array
     {
-        return ["create_awrel_settings_table"];
+        return ['create_awrel_settings_table'];
     }
 }

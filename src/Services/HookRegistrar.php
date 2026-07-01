@@ -16,58 +16,146 @@ class HookRegistrar
     {
         $this->registerDynamicStyles();
 
-        if ($this->awrelPlugin->isFaviconSpinnerEnabled()) {
-            $this->registerFaviconSpinner();
-        }
-
-        if ($this->awrelPlugin->isLoadingBarEnabled()) {
-            $this->registerLivewireLoadingBar();
-        }
-
-        if ($this->awrelPlugin->isStickyTableActionsEnabled()) {
-            $this->registerStickyTableActions();
+        foreach ($this->featureFlags() as $dataset => $isEnabledMethod) {
+            if ($this->awrelPlugin->{$isEnabledMethod}()) {
+                $this->registerFeatureFlag($dataset);
+            }
         }
     }
 
+    /**
+     * Maps an opt-in dataset flag (read by resources/js/index.js) to the
+     * AwrelPlugin::is*Enabled() method that decides whether the feature is on.
+     *
+     * @return array<string, string>
+     */
+    private function featureFlags(): array
+    {
+        return [
+            'awrelFaviconSpinner' => 'isFaviconSpinnerEnabled',
+            'awrelLoadingBar' => 'isLoadingBarEnabled',
+            'awrelPageTransition' => 'isPageTransitionEnabled',
+            'awrelButtonSubmitLoading' => 'isButtonSubmitLoadingEnabled',
+            'awrelUnsavedChangesGuard' => 'isUnsavedChangesGuardEnabled',
+            'awrelStickyActions' => 'isStickyTableActionsEnabled',
+        ];
+    }
+
+    private function registerFeatureFlag(string $dataset): void
+    {
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::HEAD_START,
+            fn (): string => "<script>document.documentElement.dataset.{$dataset} = \"\";</script>",
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // DYNAMIC STYLES (composed from focused segment methods; output is
+    // byte-for-byte identical to the previous monolithic version).
+    // ─────────────────────────────────────────────────────────────────────────
     private function registerDynamicStyles(): void
     {
         FilamentView::registerRenderHook(
             PanelsRenderHook::HEAD_END,
-            function (): string {
-                $font = e(ThemeSettings::fontFamily());
-                $radius = e(ThemeSettings::borderradius());
-                $radiusCssValue = match ($radius) {
-                    "sm" => "0.375rem",
-                    "md" => "0.5rem",
-                    "lg" => "0.75rem",
-                    "xl" => "1rem",
-                    "2xl" => "1.25rem",
-                    default => "1.25rem",
-                };
-                $sidebarWidth = (int) ThemeSettings::sidebarWidth();
-                $primaryHex = ThemeSettings::primaryColor();
-                $logoUrl = ThemeSettings::logoUrl();
-                $loginLayout = ThemeSettings::loginLayout();
-                $loginBgColor = ThemeSettings::loginBackgroundColor();
-                $loginBgImageUrl = ThemeSettings::loginBackgroundImageUrl();
-                $isBoxed = ThemeSettings::isBoxedLayout();
-                $isSidebarRight = ThemeSettings::isSidebarRight();
+            fn (): string => $this->renderHeadStyles(),
+        );
+    }
 
-                // Generate all primary color shades dynamically
-                $primaryCss = "";
-                try {
-                    $shades = Color::hex($primaryHex);
-                    foreach ($shades as $shade => $rgb) {
-                        if (is_array($rgb) && count($rgb) === 3) {
-                            $primaryCss .= "    --color-primary-{$shade}: {$rgb[0]} {$rgb[1]} {$rgb[2]}; \n";
-                            $primaryCss .= "    --primary-{$shade}: {$rgb[0]} {$rgb[1]} {$rgb[2]}; \n";
-                        } elseif (is_string($rgb)) {
-                            $primaryCss .= "    --color-primary-{$shade}: {$rgb}; \n";
-                            $primaryCss .= "    --primary-{$shade}: {$rgb}; \n";
-                        }
+    private function renderHeadStyles(): string
+    {
+        $font = e(ThemeSettings::fontFamily());
+        $radiusCss = $this->radiusCssValue(ThemeSettings::borderradius());
+        $sidebarWidth = (int) ThemeSettings::sidebarWidth();
+
+        return $this->fontLink($font)
+            .$this->wrapStyle(
+                $this->rootVariables($font, $radiusCss, $sidebarWidth)
+                .$this->globalFontFace($font)
+                .$this->borderRadiusRules()
+                .$this->logoCss()
+                .$this->loginCss()
+                .$this->boxedLayoutCss()
+                .$this->sidebarPositionCss(),
+            );
+    }
+
+    private function wrapStyle(string $rules): string
+    {
+        return "<style>{$rules}</style>";
+    }
+
+    private function radiusCssValue(string $radius): string
+    {
+        return match ($radius) {
+            'sm' => '0.375rem',
+            'md' => '0.5rem',
+            'lg' => '0.75rem',
+            'xl' => '1rem',
+            '2xl' => '1.25rem',
+            default => '1.25rem',
+        };
+    }
+
+    private function fontLink(string $font): string
+    {
+        if (
+            ! $font ||
+            in_array(strtolower($font), [
+                'sans-serif',
+                'serif',
+                'monospace',
+                'system-ui',
+            ])
+        ) {
+            return '';
+        }
+
+        $fontUrlName = str_replace(' ', '+', $font);
+
+        return <<<HTML
+
+                    <link rel="preconnect" href="https://fonts.googleapis.com">
+                    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                    <link href="https://fonts.googleapis.com/css2?family={$fontUrlName}:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+        HTML;
+    }
+
+    private function rootVariables(
+        string $font,
+        string $radiusCss,
+        int $sidebarWidth,
+    ): string {
+        $primaryCss = $this->primaryColorCss();
+
+        return <<<CSS
+
+                    :root {
+                        --awrel-font-family: "{$font}", ui-sans-serif, system-ui, sans-serif;
+                        --awrel-sidebar-width: {$sidebarWidth}px;
+                        --awrel-border-radius: {$radiusCss};
+                {$primaryCss}
                     }
-                } catch (\Throwable) {
-                    $primaryCss = <<<'CSS'
+        CSS;
+    }
+
+    private function primaryColorCss(): string
+    {
+        $primaryHex = ThemeSettings::primaryColor();
+        $css = '';
+
+        try {
+            $shades = Color::hex($primaryHex);
+            foreach ($shades as $shade => $rgb) {
+                if (is_array($rgb) && count($rgb) === 3) {
+                    $css .= "    --color-primary-{$shade}: {$rgb[0]} {$rgb[1]} {$rgb[2]}; \n";
+                    $css .= "    --primary-{$shade}: {$rgb[0]} {$rgb[1]} {$rgb[2]}; \n";
+                } elseif (is_string($rgb)) {
+                    $css .= "    --color-primary-{$shade}: {$rgb}; \n";
+                    $css .= "    --primary-{$shade}: {$rgb}; \n";
+                }
+            }
+        } catch (\Throwable) {
+            $css = <<<'CSS'
                         --color-primary-50: 255 248 240;
                         --primary-50: 255 248 240;
                         --color-primary-100: 255 236 213;
@@ -91,13 +179,53 @@ class HookRegistrar
                         --color-primary-950: 26 17 4;
                         --primary-950: 26 17 4;
                     CSS;
-                }
+        }
 
-                // ── Logo CSS ──
-                $logoStyles = "";
-                if ($logoUrl) {
-                    $safeLogoUrl = e($logoUrl);
-                    $logoStyles = <<<CSS
+        return $css;
+    }
+
+    private function globalFontFace(string $font): string
+    {
+        return <<<CSS
+
+                    :root, html, body, .fi-body {
+                        --font-sans: "{$font}", ui-sans-serif, system-ui, sans-serif !important;
+                        --font-family-sans: "{$font}", ui-sans-serif, system-ui, sans-serif !important;
+                        font-family: "{$font}", ui-sans-serif, system-ui, sans-serif !important;
+                    }
+        CSS;
+    }
+
+    private function borderRadiusRules(): string
+    {
+        return <<<'CSS'
+
+                    .fi-section:not(.fi-section-not-contained),
+                    .fi-wi-stats-overview-stat,
+                    .fi-ta-ctn,
+                    .fi-dropdown-panel,
+                    .fi-modal-window,
+                    .fi-input,
+                    .fi-btn,
+                    .badge,
+                    .fi-section-header,
+                    .awrel-table-skeleton-header,
+                    .awrel-skeleton-card {
+                        border-radius: var(--awrel-border-radius);
+                    }
+        CSS;
+    }
+
+    private function logoCss(): string
+    {
+        $logoUrl = ThemeSettings::logoUrl();
+        if (! $logoUrl) {
+            return '';
+        }
+
+        $safeLogoUrl = e($logoUrl);
+
+        return <<<CSS
 
                     .fi-logo {
                         background: url({$safeLogoUrl}) no-repeat center !important;
@@ -128,21 +256,24 @@ class HookRegistrar
                         background: white !important;
                         background-color: white !important;
                     }
-                    CSS;
-                }
+        CSS;
+    }
 
-                // ── Login Page CSS ──
-                $loginStyles = "";
-                if (
-                    $loginLayout === "split" ||
-                    $loginBgColor ||
-                    $loginBgImageUrl
-                ) {
-                    $loginStyles .= "\n\n/* ── Custom Login Page ── */\n";
+    private function loginCss(): string
+    {
+        $loginLayout = ThemeSettings::loginLayout();
+        $loginBgColor = ThemeSettings::loginBackgroundColor();
+        $loginBgImageUrl = ThemeSettings::loginBackgroundImageUrl();
 
-                    if ($loginBgImageUrl) {
-                        $safeBg = e($loginBgImageUrl);
-                        $loginStyles .= <<<CSS
+        if ($loginLayout !== 'split' && ! $loginBgColor && ! $loginBgImageUrl) {
+            return '';
+        }
+
+        $css = "\n\n/* ── Custom Login Page ── */\n";
+
+        if ($loginBgImageUrl) {
+            $safeBg = e($loginBgImageUrl);
+            $css .= <<<CSS
                         .fi-simple-layout {
                             background-image: url({$safeBg}) !important;
                             background-size: cover !important;
@@ -155,20 +286,20 @@ class HookRegistrar
                         .dark .fi-simple-layout .fi-simple-main {
                             background: rgba(17, 24, 39, 0.9) !important;
                         }
-                        CSS;
-                    }
+            CSS;
+        }
 
-                    if ($loginBgColor) {
-                        $safeColor = e($loginBgColor);
-                        $loginStyles .= <<<CSS
+        if ($loginBgColor) {
+            $safeColor = e($loginBgColor);
+            $css .= <<<CSS
                         .fi-simple-layout {
                             background-color: {$safeColor} !important;
                         }
-                        CSS;
-                    }
+            CSS;
+        }
 
-                    if ($loginLayout === "split") {
-                        $loginStyles .= <<<'CSS'
+        if ($loginLayout === 'split') {
+            $css .= <<<'CSS'
                         @media (min-width: 1024px) {
                             .fi-simple-layout {
                                 flex-direction: row !important;
@@ -209,14 +340,19 @@ class HookRegistrar
                                 margin: 0 !important;
                             }
                         }
-                        CSS;
-                    }
-                }
+            CSS;
+        }
 
-                // ── Boxed Layout CSS ──
-                $boxedStyles = "";
-                if ($isBoxed) {
-                    $boxedStyles = <<<'CSS'
+        return $css;
+    }
+
+    private function boxedLayoutCss(): string
+    {
+        if (! ThemeSettings::isBoxedLayout()) {
+            return '';
+        }
+
+        return <<<'CSS'
 
                     /* ── Boxed Layout ── */
                     .fi-main {
@@ -228,13 +364,16 @@ class HookRegistrar
                         max-width: 100%;
                         overflow-x: hidden;
                     }
-                    CSS;
-                }
+        CSS;
+    }
 
-                // ── Sidebar Position CSS ──
-                $sidebarStyles = "";
-                if ($isSidebarRight) {
-                    $sidebarStyles = <<<'CSS'
+    private function sidebarPositionCss(): string
+    {
+        if (! ThemeSettings::isSidebarRight()) {
+            return '';
+        }
+
+        return <<<'CSS'
 
                     /* ── Sidebar Right ── */
                     .fi-layout > *:has(.fi-sidebar) {
@@ -268,92 +407,6 @@ class HookRegistrar
                             transform: translateY(-50%) !important;
                         }
                     }
-                    CSS;
-                }
-
-                $fontUrlName = str_replace(' ', '+', $font);
-                $fontLink = '';
-                if ($font && !in_array(strtolower($font), ['sans-serif', 'serif', 'monospace', 'system-ui'])) {
-                    $fontLink = <<<HTML
-                    <link rel="preconnect" href="https://fonts.googleapis.com">
-                    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-                    <link href="https://fonts.googleapis.com/css2?family={$fontUrlName}:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
-                    HTML;
-                }
-
-                return <<<HTML
-                {$fontLink}
-                <style>
-                    :root {
-                        --awrel-font-family: "{$font}", ui-sans-serif, system-ui, sans-serif;
-                        --awrel-sidebar-width: {$sidebarWidth}px;
-                        --awrel-border-radius: {$radiusCssValue};
-                {$primaryCss}
-                    }
-
-                    :root, html, body, .fi-body {
-                        --font-sans: "{$font}", ui-sans-serif, system-ui, sans-serif !important;
-                        --font-family-sans: "{$font}", ui-sans-serif, system-ui, sans-serif !important;
-                        font-family: "{$font}", ui-sans-serif, system-ui, sans-serif !important;
-                    }
-
-                    .fi-section:not(.fi-section-not-contained),
-                    .fi-wi-stats-overview-stat,
-                    .fi-ta-ctn,
-                    .fi-dropdown-panel,
-                    .fi-modal-window,
-                    .fi-input,
-                    .fi-btn,
-                    .badge,
-                    .fi-section-header,
-                    .awrel-table-skeleton-header,
-                    .awrel-skeleton-card {
-                        border-radius: var(--awrel-border-radius);
-                    }
-                    {$logoStyles}
-                    {$loginStyles}
-                    {$boxedStyles}
-                    {$sidebarStyles}
-                </style>
-                HTML;
-            },
-        );
-    }
-
-    private function registerFaviconSpinner(): void
-    {
-        FilamentView::registerRenderHook(
-            PanelsRenderHook::HEAD_START,
-            fn(): string => '<script>document.documentElement.dataset.awrelFaviconSpinner = "";</script>',
-        );
-    }
-
-    private function registerStickyTableActions(): void
-    {
-        FilamentView::registerRenderHook(
-            PanelsRenderHook::HEAD_START,
-            fn(): string => '<script>document.documentElement.dataset.awrelStickyActions = "";</script>',
-        );
-    }
-
-    private function registerLivewireLoadingBar(): void
-    {
-        FilamentView::registerRenderHook(
-            PanelsRenderHook::HEAD_START,
-            fn(): string => '<script>document.documentElement.dataset.awrelLoadingBar = "";</script>',
-        );
-    }
-
-    private function hexToRgb(string $hex): string
-    {
-        $hex = ltrim($hex, "#");
-        if (strlen($hex) === 3) {
-            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
-        }
-        $r = hexdec(substr($hex, 0, 2));
-        $g = hexdec(substr($hex, 2, 2));
-        $b = hexdec(substr($hex, 4, 2));
-
-        return "{$r} {$g} {$b}";
+        CSS;
     }
 }

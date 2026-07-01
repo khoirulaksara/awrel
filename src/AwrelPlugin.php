@@ -5,11 +5,11 @@ namespace Khoirulaksara\Awrel;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 use Filament\Support\Colors\Color;
-use Filament\Support\Icons\Heroicon;
 use Khoirulaksara\Awrel\Filament\Pages\ThemeSettingsPage;
 use Khoirulaksara\Awrel\Helpers\ThemeSettings;
 use Khoirulaksara\Awrel\Services\HookRegistrar;
-use UnitEnum; // For navigationGroup type hint
+
+// For navigationGroup type hint
 
 class AwrelPlugin implements Plugin
 {
@@ -23,9 +23,15 @@ class AwrelPlugin implements Plugin
 
     protected ?bool $loadingBarEnabled = null;
 
+    protected ?bool $pageTransitionEnabled = null;
+
+    protected ?bool $buttonSubmitLoadingEnabled = null;
+
+    protected ?bool $unsavedChangesGuardEnabled = null;
+
     public function getId(): string
     {
-        return "awrel-theme";
+        return 'awrel-theme';
     }
 
     public function faviconSpinner(bool $condition = true): static
@@ -67,16 +73,60 @@ class AwrelPlugin implements Plugin
             ThemeSettings::isLoadingBarEnabled();
     }
 
+    public function pageTransition(bool $condition = true): static
+    {
+        $this->pageTransitionEnabled = $condition;
+
+        return $this;
+    }
+
+    public function isPageTransitionEnabled(): bool
+    {
+        return $this->pageTransitionEnabled ??
+            ThemeSettings::isPageTransitionEnabled();
+    }
+
+    public function buttonSubmitLoading(bool $condition = true): static
+    {
+        $this->buttonSubmitLoadingEnabled = $condition;
+
+        return $this;
+    }
+
+    public function isButtonSubmitLoadingEnabled(): bool
+    {
+        return $this->buttonSubmitLoadingEnabled ??
+            ThemeSettings::isButtonSubmitLoadingEnabled();
+    }
+
+    public function unsavedChangesGuard(bool $condition = true): static
+    {
+        $this->unsavedChangesGuardEnabled = $condition;
+
+        return $this;
+    }
+
+    public function isUnsavedChangesGuardEnabled(): bool
+    {
+        return $this->unsavedChangesGuardEnabled ??
+            ThemeSettings::isUnsavedChangesGuardEnabled();
+    }
+
+    public function getPages(): array
+    {
+        return [ThemeSettingsPage::class];
+    }
+
     public function register(Panel $panel): void
     {
-        $panel->pages([ThemeSettingsPage::class]);
+        $panel->pages($this->getPages());
 
         // Apply primary color from DB settings
         try {
             $primaryColor = ThemeSettings::primaryColor();
             if ($primaryColor) {
                 $panel->colors([
-                    "primary" => Color::hex($primaryColor),
+                    'primary' => Color::hex($primaryColor),
                 ]);
             }
         } catch (\Throwable) {
@@ -86,7 +136,7 @@ class AwrelPlugin implements Plugin
         // Apply sidebar width from DB settings
         try {
             $sidebarWidth = ThemeSettings::sidebarWidth();
-            $panel->sidebarWidth($sidebarWidth . "px");
+            $panel->sidebarWidth($sidebarWidth.'px');
         } catch (\Throwable) {
             // DB not available yet (fresh install)
         }
